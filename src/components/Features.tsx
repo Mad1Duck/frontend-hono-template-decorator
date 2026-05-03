@@ -2,42 +2,52 @@ const FEATURES = [
   {
     icon: '🎨', title: 'Decorator-Based Routing',
     desc: 'NestJS-inspired decorators for clean, declarative controllers. Metadata-driven routing with full TypeScript inference.',
-    tags: ['@Controller', '@Get @Post', '@Put @Delete'],
+    tags: ['@Controller', '@Get @Post', '@Put @Delete @All'],
   },
   {
     icon: '🔐', title: 'Auth & Authorization',
-    desc: 'JWT auth with role-based access control (RBAC) and permission guards. Declarative security on any route.',
+    desc: 'Pluggable guard executor with role-based and permission-based access control. Throws 401/403 automatically.',
     tags: ['@RequireAuth', '@RequireRole', '@Public'],
   },
   {
     icon: '✅', title: 'Zod Validation',
     desc: 'Type-safe parameter binding for body, query, and route params. Schema-first with full TypeScript inference.',
-    tags: ['@ValidatedBody', '@ValidatedQuery', '@ValidatedParam'],
+    tags: ['@Body(schema)', '@Query(schema)', '@Param'],
   },
   {
-    icon: '⚡', title: 'Redis Caching',
-    desc: 'Declarative response caching with TTL support. Reduce database load on read-heavy endpoints instantly.',
-    tags: ['@Cache', 'TTL support', 'Redis backend'],
+    icon: '📡', title: 'SSE & WebSocket',
+    desc: 'First-class streaming with @Sse and @WebSocket decorators. Pluggable upgrader for any Hono runtime.',
+    tags: ['@Sse', '@WebSocket', '@SseStream'],
+  },
+  {
+    icon: '🔁', title: 'Pub/Sub Channels',
+    desc: 'Broadcast events to SSE and WebSocket clients. In-memory by default, swap to Redis for multi-instance deployments.',
+    tags: ['channels.publish', 'SseChannelClient', 'RedisChannelAdapter'],
   },
   {
     icon: '🛡️', title: 'Rate Limiting',
-    desc: 'Per-route rate limiting with custom window, max requests, and key generators. Redis-backed for distributed systems.',
+    desc: 'Per-route rate limiting with custom window, max requests, and key generators. Pluggable for any backend.',
     tags: ['@RateLimit', 'custom keyGen'],
   },
   {
-    icon: '📊', title: 'Observability',
-    desc: 'Structured logging with Pino, Prometheus metrics, activity audit logging, and request tracing built in.',
-    tags: ['@LogActivity', '@TrackMetrics', 'Pino'],
+    icon: '📊', title: 'Request Logging',
+    desc: 'Pluggable logger with IP extraction, device detection, and duration tracking. Inject IP/device directly into handlers.',
+    tags: ['@Ip', '@Device', '@UserAgent'],
   },
   {
     icon: '💉', title: 'Dependency Injection',
-    desc: 'Lightweight DI container with singleton support. Services auto-resolved and injected into controllers.',
-    tags: ['@Injectable', '@Singleton'],
+    desc: 'Lightweight DI container with singleton support and circular dependency detection. Services auto-resolved.',
+    tags: ['@Injectable', '@Singleton', '@Inject'],
   },
   {
-    icon: '📖', title: 'API Documentation',
-    desc: 'Inline OpenAPI-style docs directly on your controllers. Tags, summaries, and response schemas alongside your code.',
-    tags: ['@ApiDoc', '@ApiTags', '@ApiResponse'],
+    icon: '📖', title: 'OpenAPI 3.1 + Scalar',
+    desc: 'Auto-generate a full OpenAPI spec from your decorators. Serve interactive Scalar docs with one line.',
+    tags: ['OpenAPIGenerator', '@ApiDoc', '@ApiTags'],
+  },
+  {
+    icon: '⚡', title: 'Interceptors',
+    desc: 'Cross-cutting concerns without middleware clutter. Retry, timeout, transform, cache, and metrics decorators.',
+    tags: ['@Retry', '@Timeout', '@Transform'],
   },
 ]
 
@@ -47,7 +57,7 @@ export default function Features() {
       <div className="section-label">what's inside</div>
       <h2 className="section-title">Everything you need.<br />Nothing you don't.</h2>
       <p className="section-desc">
-        Production-grade architecture out of the box. Focus on business logic, not boilerplate.
+        One package. No boilerplate. Focus on business logic.
       </p>
 
       <div className="feature-grid reveal">

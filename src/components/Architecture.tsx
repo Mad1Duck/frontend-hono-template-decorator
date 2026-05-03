@@ -1,10 +1,11 @@
 const STEPS = [
-  { num: '01', title: 'Global Middleware Stack',   desc: 'Request ID, Pino logger, global rate limiter (100/15min), CORS & security headers, Prometheus metrics collection.' },
-  { num: '02', title: 'Route-Level Middleware',    desc: 'Class-level and method-level middleware resolved from decorators. Rate limiters and auth guards evaluated in order.' },
-  { num: '03', title: 'Auth Guards',               desc: '@RequireAuth validates JWT. @RequireRole checks RBAC. @RequirePermission enforces fine-grained access control. @Public bypasses all guards.' },
-  { num: '04', title: 'Parameter Resolution',      desc: 'Zod schemas validate and parse @ValidatedBody, @ValidatedQuery, @ValidatedParam. @User injects the authenticated user from context.' },
-  { num: '05', title: 'Controller Method',         desc: 'Your business logic runs. DI-injected services available. Post-method hooks fire: @LogActivity writes audit log, @TrackMetrics records counters.' },
-  { num: '06', title: 'Response',                  desc: '@Cache stores result in Redis if applicable. Hono formats and sends the response with correct status codes and headers.' },
+  { num: '01', title: 'Route Registration',      desc: 'HonoRouteBuilder.build() reads decorator metadata (@Controller, @Get, @Post, @Sse, @WebSocket, etc.) and registers all routes onto a Hono app instance at startup.' },
+  { num: '02', title: 'Middleware',              desc: '@Middleware decorators at class or method level are resolved and prepended to the handler chain. Runs before guards and rate limiters.' },
+  { num: '03', title: 'Rate Limiting',           desc: '@RateLimit triggers the pluggable rateLimiterFactory. Returns 429 if the limit is exceeded before the request reaches your handler.' },
+  { num: '04', title: 'Auth Guards',             desc: '@RequireAuth, @RequireRole, @RequirePermission are passed to your pluggable guardExecutor. Throws 401 for "Unauthorized", 403 for "Forbidden". @Public skips all guards.' },
+  { num: '05', title: 'Parameter Resolution',    desc: '@Body(schema) and @Query(schema) validate via Zod — returns 400 on failure. @Param, @User, @Ip, @Device, @UserAgent, @Headers, @Req, @Res inject context values. @SseStream injects the SSE stream for streaming handlers.' },
+  { num: '06', title: 'Controller Method',       desc: 'Your business logic executes with DI-injected services resolved from the container. For SSE the response streams until the client disconnects. For WebSocket the upgrader handshake is performed.' },
+  { num: '07', title: 'Response & Logging',      desc: 'Return value is serialized to JSON and sent. The pluggable requestLogger fires with method, path, statusCode, durationMs, ip, device, and userId. Unhandled errors are routed to your onError handler.' },
 ]
 
 export default function Architecture() {

@@ -4,14 +4,14 @@ const TECH_BADGES = [
   { label: 'Hono 4.0+',       cls: 'tb-orange' },
   { label: 'Bun 1.0+',        cls: 'tb-green'  },
   { label: 'TypeScript 5.0+', cls: 'tb-blue'   },
-  { label: 'Drizzle ORM',     cls: 'tb-purple' },
   { label: 'Zod',             cls: 'tb-yellow' },
+  { label: 'SSE',             cls: 'tb-purple' },
+  { label: 'WebSocket',       cls: 'tb-purple' },
   { label: 'Redis',           cls: 'tb-gray'   },
-  { label: 'Pino',            cls: 'tb-gray'   },
-  { label: 'Prometheus',      cls: 'tb-orange' },
+  { label: 'OpenAPI 3.1',     cls: 'tb-orange' },
 ]
 
-const INSTALL_CMD = 'bun create hono-decorator@latest my-app'
+const INSTALL_CMD = 'bun add hono-forge hono zod'
 
 export default function Hero() {
   const [copied, setCopied] = useState(false)
@@ -27,24 +27,23 @@ export default function Hero() {
       <div className="hero-glow" />
 
       <div className="hero-badge">
-        v1.0 · npm package · open source
+        v0.1 · npm package · open source
       </div>
 
       <h1>
-        Backend template<br />
-        <span className="accent">decorator</span> style.<br />
+        Hono with<br />
+        <span className="accent">NestJS-style</span> decorators.<br />
         <span className="dim">production ready.</span>
       </h1>
 
       <p className="hero-sub">
-        NestJS-inspired decorators on top of Hono's blazing-fast core.
-        Controllers, DI, auth guards, rate limiting — all declarative.
-        Built for Bun. Zero boilerplate.
+        Controllers, DI, guards, SSE, WebSocket, channels, rate limiting, and OpenAPI — all declarative.
+        Install one package. No boilerplate.
       </p>
 
       <div className="hero-actions">
         <a
-          href="https://github.com/Mad1Duck/hono-backend-template-decorator-style"
+          href="https://github.com/Mad1Duck/hono-decorator"
           className="btn-primary"
           target="_blank"
           rel="noopener noreferrer"

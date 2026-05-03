@@ -10,7 +10,7 @@ export default function Navbar() {
     <nav>
       <a href="#" className="nav-logo">
         <span className="flame">🔥</span>
-        <span>create-hono-decorator</span>
+        <span>hono-forge</span>
       </a>
       <ul className="nav-links">
         {NAV_LINKS.map((l) => (
@@ -18,7 +18,7 @@ export default function Navbar() {
         ))}
         <li>
           <a
-            href="https://github.com/Mad1Duck/hono-backend-template-decorator-style"
+            href="https://github.com/Mad1Duck/hono-decorator"
             target="_blank"
             rel="noopener noreferrer"
             className="nav-github"
