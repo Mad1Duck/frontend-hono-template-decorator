@@ -47,7 +47,12 @@ const FEATURES = [
   {
     icon: '⚡', title: 'Interceptors',
     desc: 'Cross-cutting concerns without middleware clutter. Retry, timeout, transform, cache, and metrics decorators.',
-    tags: ['@Retry', '@Timeout', '@Transform'],
+    tags: ['@Retry', '@Timeout', '@Transform', '@Cache', '@TrackMetrics'],
+  },
+  {
+    icon: '🌐', title: 'Built-in Middleware',
+    desc: 'First-class decorators for the most common Hono middleware. No boilerplate — just stack and go.',
+    tags: ['@Cors', '@Compress', '@SecureHeaders', '@PrettyJson'],
   },
 ]
 
