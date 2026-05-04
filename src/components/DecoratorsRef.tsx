@@ -40,6 +40,7 @@ const GROUPS = [
       { name: '@RequirePermission(...perms)',       desc: 'Requires ALL listed permissions.' },
       { name: '@RequireAnyPermission(...perms)',    desc: 'Requires at least ONE of the listed permissions.' },
       { name: '@Public()',                          desc: 'Marks route as public, bypassing all auth guards.' },
+      { name: '@Private()',                         desc: 'Marks route as internal-only. Excluded when build() is called with { excludePrivate: true }.' },
       { name: '@RateLimit(opts)',                   desc: 'Rate-limits the route. Options: max, windowMs, message, keyGenerator.' },
     ],
   },
@@ -86,8 +87,8 @@ const GROUPS = [
       { name: '@Throttle(ms)',       desc: 'Prevents the method from being called more than once per ms window. Throws if called too soon.' },
       { name: '@Memoize(opts?)',     desc: 'Caches the return value in memory keyed by arguments. Optional ttl (ms) before cache expires.' },
       { name: '@ValidateResult(schema)', desc: 'Validates the return value against a Zod schema. Throws ZodError on mismatch.' },
-      { name: '@Audit(opts)',        desc: 'Logs an audit entry via this.logger before the method runs. Options: action.' },
-      { name: '@Transaction()',      desc: 'Wraps method in this.db.transaction(). Compatible with Drizzle, Kysely, and similar.' },
+      { name: '@Audit(opts)',          desc: 'Logs an audit entry via this.logger before the method runs. Options: action.' },
+      { name: '@Transaction(exec?)',  desc: 'Wraps method in this.db.transaction(). Pass a custom TransactionExecutor for Prisma ($transaction) or Kysely.' },
     ],
   },
   {
