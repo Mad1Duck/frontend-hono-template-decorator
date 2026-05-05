@@ -1,11 +1,12 @@
 const STEPS = [
   { num: '01', title: 'Route Registration',      desc: 'HonoRouteBuilder.build() reads decorator metadata (@Controller, @Get, @Post, @Sse, @WebSocket, etc.) and registers all routes onto a Hono app instance at startup.' },
-  { num: '02', title: 'Middleware',              desc: '@Middleware decorators at class or method level are resolved and prepended to the handler chain. Runs before guards and rate limiters.' },
-  { num: '03', title: 'Rate Limiting',           desc: '@RateLimit triggers the pluggable rateLimiterFactory. Returns 429 if the limit is exceeded before the request reaches your handler.' },
-  { num: '04', title: 'Auth Guards',             desc: '@RequireAuth, @RequireRole, @RequirePermission are passed to your pluggable guardExecutor. Throws 401 for "Unauthorized", 403 for "Forbidden". @Public skips all guards.' },
-  { num: '05', title: 'Parameter Resolution',    desc: '@Body(schema) and @Query(schema) validate via Zod — returns 400 on failure. @Param, @User, @Ip, @Device, @UserAgent, @Headers, @Req, @Res inject context values. @SseStream injects the SSE stream for streaming handlers.' },
-  { num: '06', title: 'Controller Method',       desc: 'Your business logic executes with DI-injected services resolved from the container. For SSE the response streams until the client disconnects. For WebSocket the upgrader handshake is performed.' },
-  { num: '07', title: 'Response & Logging',      desc: 'Return value is serialized to JSON and sent. The pluggable requestLogger fires with method, path, statusCode, durationMs, ip, device, and userId. Unhandled errors are routed to your onError handler.' },
+  { num: '02', title: 'Trace ID & onRequestStart', desc: 'A trace/correlation ID is assigned from X-Request-ID or auto-generated UUID and echoed back on the response. The onRequestStart hook fires here — use it to start OTel spans or attach logger context.' },
+  { num: '03', title: 'Middleware',              desc: '@Middleware decorators at class or method level are resolved and prepended to the handler chain. Runs before guards and rate limiters.' },
+  { num: '04', title: 'Rate Limiting',           desc: '@RateLimit triggers the pluggable rateLimiterFactory. Returns 429 if the limit is exceeded before the request reaches your handler.' },
+  { num: '05', title: 'Auth Guards',             desc: '@RequireAuth, @RequireRole, @RequirePermission are passed to your pluggable guardExecutor. Throws 401 for "Unauthorized", 403 for "Forbidden". @Public skips all guards.' },
+  { num: '06', title: 'Parameter Resolution',    desc: '@Body(schema) and @Query(schema) validate via Zod — returns 400 on failure. @Param, @User, @Ip, @Device, @UserAgent, @Headers, @Req, @Res inject context values. @SseStream injects the SSE stream for streaming handlers.' },
+  { num: '07', title: 'Controller Method',       desc: 'Your business logic executes with DI-injected services resolved from the container. Request-scoped instances (@RequestScoped) are created fresh and shared within this request. getTraceId() is available anywhere in the call chain.' },
+  { num: '08', title: 'Response & Cleanup',      desc: 'Return value is serialized to JSON. HttpException is auto-caught and returned as structured JSON at the correct status. onDestroy() is called on all @RequestScoped instances. requestLogger fires with method, path, statusCode, durationMs, ip, traceId.' },
 ]
 
 export default function Architecture() {

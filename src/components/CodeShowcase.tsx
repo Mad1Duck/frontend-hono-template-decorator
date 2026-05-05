@@ -96,10 +96,42 @@ const REALTIME_CODE = (
   </>
 )
 
+const ERRORS_CODE = (
+  <>
+    <span className="t-kw">import</span>{' '}<span className="t-str">'reflect-metadata'</span>;{' '}{'\n'}
+    <span className="t-kw">import</span> {'{ '}<span className="t-cls">Controller</span>, <span className="t-cls">Get</span>, <span className="t-cls">Post</span>, <span className="t-cls">Param</span>, <span className="t-cls">Body</span>,{'\n'}
+    {'  '}<span className="t-cls">HttpException</span>, <span className="t-cls">Injectable</span>, <span className="t-fn">getTraceId</span>{'\n'}
+    {'}'} <span className="t-kw">from</span> <span className="t-str">'hono-forge'</span>;{' '}{'\n\n'}
+    <span className="t-dec">@Injectable</span>(){'\n'}
+    <span className="t-kw">class</span> <span className="t-cls">UserService</span> {'{'}{' '}{'\n'}
+    {'  '}<span className="t-kw">async</span> <span className="t-fn">findById</span>(id: <span className="t-kw">string</span>) {'{'}{' '}{'\n'}
+    {'    '}<span className="t-kw">const</span> user = <span className="t-kw">await</span> db.<span className="t-fn">find</span>(id);{'\n'}
+    {'    '}<span className="t-kw">if</span> (!user) <span className="t-kw">throw</span> <span className="t-cls">HttpException</span>.<span className="t-fn">notFound</span>(<span className="t-str">'User not found'</span>);{'\n'}
+    {'    '}<span className="t-kw">return</span> user;{'\n'}
+    {'  '}{'}'}{' '}{'\n\n'}
+    {'  '}<span className="t-kw">async</span> <span className="t-fn">create</span>(data: <span className="t-kw">any</span>) {'{'}{' '}{'\n'}
+    {'    '}<span className="t-kw">const</span> exists = <span className="t-kw">await</span> db.<span className="t-fn">findByEmail</span>(data.email);{'\n'}
+    {'    '}<span className="t-kw">if</span> (exists) <span className="t-kw">throw</span> <span className="t-cls">HttpException</span>.<span className="t-fn">conflict</span>(<span className="t-str">'Email already taken'</span>);{'\n'}
+    {'    '}<span className="t-kw">return</span> db.<span className="t-fn">insert</span>(data);{'\n'}
+    {'  '}{'}'}{' '}{'\n'}
+    {'}'}{' '}{'\n\n'}
+    <span className="t-cmt">{'// getTraceId() works anywhere — services, repos, loggers'}</span>{'\n'}
+    <span className="t-dec">@Injectable</span>(){'\n'}
+    <span className="t-kw">class</span> <span className="t-cls">AuditService</span> {'{'}{' '}{'\n'}
+    {'  '}<span className="t-fn">log</span>(action: <span className="t-kw">string</span>) {'{'}{' '}{'\n'}
+    {'    '}console.<span className="t-fn">log</span>({'{'} traceId: <span className="t-fn">getTraceId</span>(), action {'}'});{'\n'}
+    {'  '}{'}'}{' '}{'\n'}
+    {'}'}{' '}{'\n\n'}
+    <span className="t-cmt">{'// HonoRouteBuilder auto-handles HttpException → structured JSON'}</span>{'\n'}
+    <span className="t-cmt">{'// { status: "error", error: { code: "NOT_FOUND", message: "..." } }'}</span>
+  </>
+)
+
 const TABS = [
   { id: 'basic',    label: 'basic',    code: BASIC_CODE    },
   { id: 'auth',     label: 'auth',     code: AUTH_CODE     },
   { id: 'realtime', label: 'realtime', code: REALTIME_CODE },
+  { id: 'errors',   label: 'errors',   code: ERRORS_CODE   },
 ]
 
 export default function CodeShowcase() {

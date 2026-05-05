@@ -36,8 +36,8 @@ const FEATURES = [
   },
   {
     icon: '💉', title: 'Dependency Injection',
-    desc: 'Lightweight DI container with singleton support and circular dependency detection. Services auto-resolved.',
-    tags: ['@Injectable', '@Singleton', '@Inject'],
+    desc: 'Lightweight DI container with singleton, transient, and request-scoped lifetimes. Lifecycle hooks, circular dependency detection, and auto-resolution.',
+    tags: ['@Injectable', '@Singleton', '@RequestScoped', '@Inject'],
   },
   {
     icon: '📖', title: 'OpenAPI 3.1 + Scalar',
@@ -53,6 +53,16 @@ const FEATURES = [
     icon: '🌐', title: 'Built-in Middleware',
     desc: 'First-class decorators for the most common Hono middleware. No boilerplate — just stack and go.',
     tags: ['@Cors', '@Compress', '@SecureHeaders', '@PrettyJson'],
+  },
+  {
+    icon: '🚨', title: 'Structured Error Handling',
+    desc: 'HttpException with static factories for every HTTP error. Auto-serialized to consistent JSON. Optional stack trace exposure for development.',
+    tags: ['HttpException', '.badRequest()', '.notFound()', 'exposeStack'],
+  },
+  {
+    icon: '🔭', title: 'Observability',
+    desc: 'Every request gets a trace ID from X-Request-ID or auto-generated UUID. Access it anywhere — services, repos, loggers — without passing it explicitly.',
+    tags: ['getTraceId()', 'onRequestStart', 'X-Request-ID'],
   },
 ]
 

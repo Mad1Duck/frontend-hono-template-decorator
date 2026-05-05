@@ -27,7 +27,7 @@ export default function Hero() {
       <div className="hero-glow" />
 
       <div className="hero-badge">
-        v0.1 ·{' '}
+        v0.2 ·{' '}
         <a
           href="https://www.npmjs.com/package/hono-forge"
           target="_blank"
@@ -45,7 +45,7 @@ export default function Hero() {
       </h1>
 
       <p className="hero-sub">
-        Controllers, DI, guards, SSE, WebSocket, channels, rate limiting, and OpenAPI — all declarative.
+        Controllers, DI, guards, SSE, WebSocket, channels, rate limiting, OpenAPI, structured errors, and trace IDs — all declarative.
         Install one package. No boilerplate.
       </p>
 

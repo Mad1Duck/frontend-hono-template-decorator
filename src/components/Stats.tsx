@@ -27,7 +27,7 @@ export default function Stats() {
 
   const STATS = [
     { value: '14k+',    label: 'req / sec'       },
-    { value: '20+',     label: 'decorators'       },
+    { value: '50+',     label: 'decorators'       },
     { value: stars,     label: 'GitHub stars'     },
     { value: downloads, label: 'npm downloads'    },
   ]
