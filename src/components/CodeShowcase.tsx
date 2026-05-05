@@ -129,41 +129,29 @@ const ERRORS_CODE = (
 
 const DI_CODE = (
   <>
-    <span className="t-kw">import</span> {'{ '}{'\n'}
-    {'  '}<span className="t-cls">Injectable</span>, <span className="t-cls">Singleton</span>, <span className="t-cls">RequestScoped</span>,{'\n'}
-    {'  '}<span className="t-cls">Stateless</span>, <span className="t-cls">OnInit</span>, <span className="t-cls">OnDestroy</span>,{'\n'}
-    {'}'} <span className="t-kw">from</span> <span className="t-str">'hono-forge'</span>;{'\n\n'}
-    <span className="t-cmt">// Singleton: one instance for the app lifecycle</span>{'\n'}
-    <span className="t-dec">@Injectable</span>() <span className="t-dec">@Singleton</span>() <span className="t-dec">@Stateless</span>(){'\n'}
-    <span className="t-kw">class</span> <span className="t-cls">ConfigService</span> <span className="t-cls">implements</span> <span className="t-cls">OnInit</span> {'{'}{'\n'}
-    {'  '}<span className="t-kw">readonly</span> dbUrl = process.env.<span className="t-str">DATABASE_URL</span>!;{'\n'}
-    {'  '}<span className="t-kw">readonly</span> redis = <span className="t-kw">new</span> <span className="t-cls">Redis</span>(process.env.<span className="t-str">REDIS_URL</span>!);{'\n'}
-    {'  '}<span className="t-kw">async</span> <span className="t-fn">onInit</span>() {'{'}{'\n'}
-    {'    '}<span className="t-kw">await</span> this.redis.<span className="t-fn">ping</span>();{'\n'}
-    {'  '}{'}'}{'\n'}
+    <span className="t-kw">import</span> {'{ '}<span className="t-cls">Injectable</span>, <span className="t-cls">Singleton</span>, <span className="t-cls">RequestScoped</span>, <span className="t-cls">OnInit</span>, <span className="t-cls">OnDestroy</span>, <span className="t-cls">Controller</span>, <span className="t-cls">Get</span>{' }'} <span className="t-kw">from</span> <span className="t-str">'hono-forge'</span>;{'\n'}
+    <span className="t-kw">import</span> {'{ '}<span className="t-cls">db</span>{' }'} <span className="t-kw">from</span> <span className="t-str">'@/db'</span>;{'\n\n'}
+    <span className="t-cmt">// Singleton: one instance for app lifecycle</span>{'\n'}
+    <span className="t-dec">@Injectable</span>() <span className="t-dec">@Singleton</span>() <span className="t-cls">implements</span> <span className="t-cls">OnInit</span>, <span className="t-cls">OnDestroy</span> {'{'}{'\n'}
+    {'  '}<span className="t-kw">constructor</span>(<span className="t-kw">private</span> config: <span className="t-cls">Config</span>) {'{}'}{'\n'}
+    {'  '}<span className="t-kw">readonly</span> cache = <span className="t-kw">new</span> <span className="t-cls">Map</span>();{'\n'}
+    {'  '}<span className="t-kw">async</span> <span className="t-fn">onInit</span>() {'{'} <span className="t-kw">await</span> db.<span className="t-fn">connect</span>(); {'}'}{'\n'}
+    {'  '}<span className="t-kw">async</span> <span className="t-fn">onDestroy</span>() {'{'} <span className="t-kw">await</span> db.<span className="t-fn">disconnect</span>(); {'}'}{'\n'}
     {'}'}{'\n\n'}
-    <span className="t-cmt">// RequestScoped: new instance per HTTP request</span>{'\n'}
+    <span className="t-cmt">// RequestScoped: new instance per request</span>{'\n'}
     <span className="t-dec">@Injectable</span>() <span className="t-dec">@RequestScoped</span>() <span className="t-cls">implements</span> <span className="t-cls">OnDestroy</span> {'{'}{'\n'}
-    {'  '}<span className="t-kw">readonly</span> traceId = <span className="t-fn">getTraceId</span>();{'\n'}
-    {'  '}<span className="t-fn">log</span>(msg: <span className="t-kw">string</span>) {'{'}{'\n'}
-    {'    '}console.<span className="t-fn">log</span>(<span className="t-str">{`\`[\${this.traceId}] \${msg}\``}</span>);{'\n'}
-    {'  '}{'}'}{'\n'}
-    {'  '}<span className="t-kw">async</span> <span className="t-fn">onDestroy</span>() {'{'}{'\n'}
-    {'    '}<span className="t-cmt">// cleanup: close DB connections, release locks</span>{'\n'}
-    {'  '}{'}'}{'\n'}
+    {'  '}<span className="t-kw">constructor</span>(<span className="t-kw">private</span> cacheService: <span className="t-cls">CacheService</span>) {'{}'}{'\n'}
+    {'  '}<span className="t-kw">readonly</span> traceId = crypto.<span className="t-fn">randomUUID</span>();{'\n'}
+    {'  '}<span className="t-kw">async</span> <span className="t-fn">onDestroy</span>() {'{'} <span className="t-kw">await</span> this.cacheService.<span className="t-fn">cleanup</span>(this.traceId); {'}'}{'\n'}
     {'}'}{'\n\n'}
     <span className="t-dec">@Controller</span>(<span className="t-str">'/users'</span>){'\n'}
     <span className="t-kw">class</span> <span className="t-cls">UserController</span> {'{'}{'\n'}
-    {'  '}constructor({'\n'}
-    {'    '}<span className="t-kw">private</span> config: <span className="t-cls">ConfigService</span>,{'\n'}
-    {'    '}<span className="t-kw">private</span> logger: <span className="t-cls">RequestLogger</span>,{'\n'}
-    {'  '}) {'{}'}{'\n'}
-    {'  '}<span className="t-dec">@Get</span>(<span className="t-str">'/:id'</span>) <span className="t-dec">@Public</span>(){'\n'}
-    {'  '}<span className="t-kw">async</span> <span className="t-fn">get</span>(<span className="t-dec">@Param</span>(<span className="t-str">'id'</span>) id: <span className="t-kw">string</span>) {'{'}{'\n'}
-    {'    '}this.logger.<span className="t-fn">log</span>(<span className="t-str">'Fetching user'</span>);{'\n'}
-    {'    '}<span className="t-kw">return</span> {'{'} id, db: this.config.dbUrl {'}'};{'\n'}
-    {'  '}{'}'}{'\n'}
-    {'}'}{'\n'}
+    {'  '}<span className="t-kw">constructor</span>(<span className="t-kw">private</span> cache: <span className="t-cls">CacheService</span>, <span className="t-kw">private</span> ctx: <span className="t-cls">RequestContext</span>) {'{}'}{'\n'}
+    {'  '}<span className="t-dec">@Get</span>(<span className="t-str">'/:id'</span>) <span className="t-fn">get</span>(<span className="t-dec">@Param</span>(<span className="t-str">'id'</span>) id: <span className="t-kw">string</span>) {'{'} <span className="t-kw">return</span> cache.<span className="t-fn">get</span>(id); {'}'}{'\n'}
+    {'}'}{'\n\n'}
+    <span className="t-kw">const</span> app = <span className="t-kw">new</span> <span className="t-cls">Hono</span>();{'\n'}
+    app.<span className="t-fn">route</span>(<span className="t-str">'/'</span>, <span className="t-cls">HonoRouteBuilder</span>.<span className="t-fn">build</span>(<span className="t-cls">UserController</span>));{'\n'}
+    <span className="t-kw">export default</span> app;
   </>
 )
 
