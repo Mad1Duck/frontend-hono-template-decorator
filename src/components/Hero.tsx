@@ -27,7 +27,15 @@ export default function Hero() {
       <div className="hero-glow" />
 
       <div className="hero-badge">
-        v0.1 · npm package · open source
+        v0.1 ·{' '}
+        <a
+          href="https://www.npmjs.com/package/hono-forge"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          npm package
+        </a>
+        {' '}· open source
       </div>
 
       <h1>

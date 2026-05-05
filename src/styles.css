@@ -135,6 +135,20 @@ nav {
 
 .nav-github:hover { background: var(--accent); color: #fff; }
 
+.nav-npm {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: #cc3534;
+  text-decoration: none;
+  border: 1px solid #cc3534;
+  padding: 0.3rem 0.8rem;
+  border-radius: 3px;
+  transition: all 0.2s;
+  letter-spacing: 0.05em;
+}
+
+.nav-npm:hover { background: #cc3534; color: #fff; }
+
 /* ════════════════════════════════════════════
    HERO
 ════════════════════════════════════════════ */
@@ -177,6 +191,9 @@ nav {
   text-transform: uppercase;
   animation: fadeUp 0.6s ease both;
 }
+
+.hero-badge a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.hero-badge a:hover { opacity: 0.75; }
 
 .hero-badge::before {
   content: '';
