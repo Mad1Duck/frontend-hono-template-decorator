@@ -6,6 +6,7 @@ import Features from '@/components/Features'
 import CodeShowcase from '@/components/CodeShowcase'
 import DecoratorsRef from '@/components/DecoratorsRef'
 import Architecture from '@/components/Architecture'
+import Changelog from '@/components/Changelog'
 import Footer from '@/components/Footer'
 
 export default function HomePage() {
@@ -38,6 +39,8 @@ export default function HomePage() {
       <DecoratorsRef />
       <div className="divider" />
       <Architecture />
+      <div className="divider" />
+      <Changelog />
       <Footer />
     </>
   )

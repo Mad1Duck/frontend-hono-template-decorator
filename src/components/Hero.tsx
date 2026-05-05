@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const TECH_BADGES = [
   { label: 'Hono 4.0+',       cls: 'tb-orange' },
@@ -15,6 +15,18 @@ const INSTALL_CMD = 'bun add hono-forge hono zod'
 
 export default function Hero() {
   const [copied, setCopied] = useState(false)
+  const [version, setVersion] = useState('0.2.1') // fallback
+
+  useEffect(() => {
+    fetch('https://registry.npmjs.org/hono-forge')
+      .then(res => res.json())
+      .then(data => {
+        setVersion(data['dist-tags'].latest)
+      })
+      .catch(() => {
+        // Keep fallback version if fetch fails
+      })
+  }, [])
 
   function handleCopy() {
     navigator.clipboard.writeText(INSTALL_CMD)
@@ -27,7 +39,7 @@ export default function Hero() {
       <div className="hero-glow" />
 
       <div className="hero-badge">
-        v0.2 ·{' '}
+        v{version} ·{' '}
         <a
           href="https://www.npmjs.com/package/hono-forge"
           target="_blank"

@@ -51,7 +51,7 @@ const AUTH_CODE = (
     {'  '}<span className="t-cmt">// Require authentication</span>{'\n'}
     {'  '}<span className="t-dec">@Get</span>(<span className="t-str">'/dashboard'</span>) <span className="t-dec">@RequireAuth</span>(){'\n'}
     {'  '}<span className="t-kw">async</span> <span className="t-fn">dashboard</span>(<span className="t-dec">@User</span>() user: <span className="t-cls">AuthUser</span>) {'{'}{'\n'}
-    {'    '}<span className="t-kw">return</span> {'{'} message: <span className="t-str">{"`Welcome ${'{'}user.name{'}'}`"}</span> {'}'};{'\n'}
+    {'    '}<span className="t-kw">return</span> {'{'} message: <span className="t-str">{`\`Welcome \${user.name}\``}</span> {'}'};{'\n'}
     {'  '}{'}'}{'\n\n'}
     {'  '}<span className="t-cmt">// Role-based access control</span>{'\n'}
     {'  '}<span className="t-dec">@Delete</span>(<span className="t-str">'/users/:id'</span>) <span className="t-dec">@RequireRole</span>(<span className="t-str">'admin'</span>){'\n'}
@@ -82,9 +82,9 @@ const REALTIME_CODE = (
     {'    '}<span className="t-dec">@Ip</span>() ip: <span className="t-kw">string</span>,{'\n'}
     {'  '}) {'{'}{'\n'}
     {'    '}<span className="t-kw">const</span> client = <span className="t-kw">new</span> <span className="t-cls">SseChannelClient</span>(userId, stream);{'\n'}
-    {'    '}<span className="t-kw">await</span> channels.<span className="t-fn">subscribe</span>(<span className="t-str">{"`user:${'{'}userId{'}'}`"}</span>, client);{'\n'}
+    {'    '}<span className="t-kw">await</span> channels.<span className="t-fn">subscribe</span>(<span className="t-str">{`\`user:\${userId}\``}</span>, client);{'\n'}
     {'    '}stream.<span className="t-fn">onAbort</span>
-    {'      '}channels.<span className="t-fn">unsubscribe</span>(<span className="t-str">{"`user:${'{'}userId{'}'}`"}</span>, userId));{'\n\n'}
+    {'      '}channels.<span className="t-fn">unsubscribe</span>(<span className="t-str">{`\`user:\${userId}\``}</span>, userId));{'\n\n'}
     {'    '}<span className="t-kw">while</span> (!stream.closed) {'{'}{'\n'}
     {'      '}<span className="t-kw">await</span> stream.<span className="t-fn">sleep</span>(<span className="t-num">30_000</span>);{'\n'}
     {'      '}<span className="t-kw">await</span> stream.<span className="t-fn">writeSSE</span>({'{'} event: <span className="t-str">'ping'</span>, data: <span className="t-str">''</span> {'}'});{'\n'}
@@ -127,9 +127,89 @@ const ERRORS_CODE = (
   </>
 )
 
+const DI_CODE = (
+  <>
+    <span className="t-kw">import</span> {'{ '}{'\n'}
+    {'  '}<span className="t-cls">Injectable</span>, <span className="t-cls">Singleton</span>, <span className="t-cls">RequestScoped</span>,{'\n'}
+    {'  '}<span className="t-cls">Stateless</span>, <span className="t-cls">OnInit</span>, <span className="t-cls">OnDestroy</span>,{'\n'}
+    {'}'} <span className="t-kw">from</span> <span className="t-str">'hono-forge'</span>;{'\n\n'}
+    <span className="t-cmt">// Singleton: one instance for the app lifecycle</span>{'\n'}
+    <span className="t-dec">@Injectable</span>() <span className="t-dec">@Singleton</span>() <span className="t-dec">@Stateless</span>(){'\n'}
+    <span className="t-kw">class</span> <span className="t-cls">ConfigService</span> <span className="t-cls">implements</span> <span className="t-cls">OnInit</span> {'{'}{'\n'}
+    {'  '}<span className="t-kw">readonly</span> dbUrl = process.env.<span className="t-str">DATABASE_URL</span>!;{'\n'}
+    {'  '}<span className="t-kw">readonly</span> redis = <span className="t-kw">new</span> <span className="t-cls">Redis</span>(process.env.<span className="t-str">REDIS_URL</span>!);{'\n'}
+    {'  '}<span className="t-kw">async</span> <span className="t-fn">onInit</span>() {'{'}{'\n'}
+    {'    '}<span className="t-kw">await</span> this.redis.<span className="t-fn">ping</span>();{'\n'}
+    {'  '}{'}'}{'\n'}
+    {'}'}{'\n\n'}
+    <span className="t-cmt">// RequestScoped: new instance per HTTP request</span>{'\n'}
+    <span className="t-dec">@Injectable</span>() <span className="t-dec">@RequestScoped</span>() <span className="t-cls">implements</span> <span className="t-cls">OnDestroy</span> {'{'}{'\n'}
+    {'  '}<span className="t-kw">readonly</span> traceId = <span className="t-fn">getTraceId</span>();{'\n'}
+    {'  '}<span className="t-fn">log</span>(msg: <span className="t-kw">string</span>) {'{'}{'\n'}
+    {'    '}console.<span className="t-fn">log</span>(<span className="t-str">{`\`[\${this.traceId}] \${msg}\``}</span>);{'\n'}
+    {'  '}{'}'}{'\n'}
+    {'  '}<span className="t-kw">async</span> <span className="t-fn">onDestroy</span>() {'{'}{'\n'}
+    {'    '}<span className="t-cmt">// cleanup: close DB connections, release locks</span>{'\n'}
+    {'  '}{'}'}{'\n'}
+    {'}'}{'\n\n'}
+    <span className="t-dec">@Controller</span>(<span className="t-str">'/users'</span>){'\n'}
+    <span className="t-kw">class</span> <span className="t-cls">UserController</span> {'{'}{'\n'}
+    {'  '}constructor({'\n'}
+    {'    '}<span className="t-kw">private</span> config: <span className="t-cls">ConfigService</span>,{'\n'}
+    {'    '}<span className="t-kw">private</span> logger: <span className="t-cls">RequestLogger</span>,{'\n'}
+    {'  '}) {'{}'}{'\n'}
+    {'  '}<span className="t-dec">@Get</span>(<span className="t-str">'/:id'</span>) <span className="t-dec">@Public</span>(){'\n'}
+    {'  '}<span className="t-kw">async</span> <span className="t-fn">get</span>(<span className="t-dec">@Param</span>(<span className="t-str">'id'</span>) id: <span className="t-kw">string</span>) {'{'}{'\n'}
+    {'    '}this.logger.<span className="t-fn">log</span>(<span className="t-str">'Fetching user'</span>);{'\n'}
+    {'    '}<span className="t-kw">return</span> {'{'} id, db: this.config.dbUrl {'}'};{'\n'}
+    {'  '}{'}'}{'\n'}
+    {'}'}{'\n'}
+  </>
+)
+
+const MIDDLEWARE_CODE = (
+  <>
+    <span className="t-kw">import</span> {'{ '}<span className="t-cls">Middleware</span>, <span className="t-cls">Throttle</span>, <span className="t-cls">Memoize</span>, <span className="t-cls">Cors</span>{' }'} <span className="t-kw">from</span> <span className="t-str">'hono-forge'</span>;{'\n'}
+    <span className="t-kw">import type</span> {'{ '}<span className="t-cls">Context</span>, <span className="t-cls">Next</span>{' }'} <span className="t-kw">from</span> <span className="t-str">'hono'</span>;{'\n\n'}
+    <span className="t-cmt">// Custom middleware: request logging</span>{'\n'}
+    <span className="t-kw">const</span> <span className="t-cls">requestLogger</span> = <span className="t-kw">async</span> (c: <span className="t-cls">Context</span>, next: <span className="t-cls">Next</span>) {'='}&gt; {'{'}{'\n'}
+    {'  '}<span className="t-kw">const</span> start = <span className="t-fn">Date</span>.<span className="t-fn">now</span>();{'\n'}
+    {'  '}<span className="t-kw">await</span> <span className="t-fn">next</span>();{'\n'}
+    {'  '}console.<span className="t-fn">log</span>(<span className="t-str">{`\`\${c.req.method} \${c.req.path} \${Date.now() - start}ms\``}</span>);{'\n'}
+    {'}'};{'\n\n'}
+    <span className="t-dec">@Controller</span>(<span className="t-str">'/api'</span>){'\n'}
+    <span className="t-dec">@Middleware</span>(<span className="t-cls">requestLogger</span>){'\n'}
+    <span className="t-dec">@Cors</span>({'{'} origin: <span className="t-str">'*'</span> {'}'}){'\n'}
+    <span className="t-kw">class</span> <span className="t-cls">ApiController</span> {'{'}{'\n\n'}
+    {'  '}<span className="t-cmt">// Throttle expensive operations</span>{'\n'}
+    {'  '}<span className="t-dec">@Get</span>(<span className="t-str">'/report'</span>) <span className="t-dec">@Public</span>() <span className="t-dec">@Throttle</span>(<span className="t-num">10_000</span>){'\n'}
+    {'  '}<span className="t-kw">async</span> <span className="t-fn">generateReport</span>() {'{'}{'\n'}
+    {'    '}<span className="t-cmt">// Heavy computation — only once per 10s per instance</span>{'\n'}
+    {'    '}<span className="t-kw">return</span> this.<span className="t-fn">runHeavyQuery</span>();{'\n'}
+    {'  '}{'}'}{'\n\n'}
+    {'  '}<span className="t-cmt">// Memoize cache: global by default</span>{'\n'}
+    {'  '}<span className="t-dec">@Get</span>(<span className="t-str">'/config'</span>) <span className="t-dec">@Public</span>(){'\n'}
+    {'  '}<span className="t-dec">@Memoize</span>({'{'} ttl: <span className="t-num">60_000</span> {'}'}){'\n'}
+    {'  '}<span className="t-kw">async</span> <span className="t-fn">getConfig</span>() {'{'}{'\n'}
+    {'    '}<span className="t-cmt">// Fetch from DB only once per minute</span>{'\n'}
+    {'    '}<span className="t-kw">return</span> <span className="t-kw">await</span> db.<span className="t-fn">getConfig</span>();{'\n'}
+    {'  '}{'}'}{'\n\n'}
+    {'  '}<span className="t-cmt">// Request-scoped memoize: per-user cache</span>{'\n'}
+    {'  '}<span className="t-dec">@Get</span>(<span className="t-str">'/profile'</span>) <span className="t-dec">@RequireAuth</span>(){'\n'}
+    {'  '}<span className="t-dec">@Memoize</span>({'{'} scope: <span className="t-str">'request'</span>, ttl: <span className="t-num">5_000</span> {'}'}){'\n'}
+    {'  '}<span className="t-kw">async</span> <span className="t-fn">getProfile</span>(<span className="t-dec">@User</span>() user: <span className="t-cls">AuthUser</span>) {'{'}{'\n'}
+    {'    '}<span className="t-cmt">// Cached per-request, per-user</span>{'\n'}
+    {'    '}<span className="t-kw">return</span> <span className="t-kw">await</span> this.userService.<span className="t-fn">findById</span>(user.id);{'\n'}
+    {'  '}{'}'}{'\n'}
+    {'}'}{'\n'}
+  </>
+)
+
 const TABS = [
   { id: 'basic',    label: 'basic',    code: BASIC_CODE    },
+  { id: 'di',       label: 'di',       code: DI_CODE       },
   { id: 'auth',     label: 'auth',     code: AUTH_CODE     },
+  { id: 'middleware', label: 'middleware', code: MIDDLEWARE_CODE },
   { id: 'realtime', label: 'realtime', code: REALTIME_CODE },
   { id: 'errors',   label: 'errors',   code: ERRORS_CODE   },
 ]

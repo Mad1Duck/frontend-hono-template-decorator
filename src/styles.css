@@ -385,6 +385,16 @@ section {
   margin-bottom: 3rem;
 }
 
+.section-desc a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: text-decoration 0.2s;
+}
+
+.section-desc a:hover {
+  text-decoration: underline;
+}
+
 /* ════════════════════════════════════════════
    STATS
 ════════════════════════════════════════════ */

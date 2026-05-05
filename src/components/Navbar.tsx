@@ -3,6 +3,7 @@ const NAV_LINKS = [
   { label: 'Decorators',   href: '#decorators'   },
   { label: 'Usage',        href: '#usage'        },
   { label: 'Architecture', href: '#architecture' },
+  { label: 'Changelog',    href: '#changelog'    },
 ]
 
 export default function Navbar() {
