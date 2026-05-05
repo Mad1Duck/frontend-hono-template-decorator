@@ -167,6 +167,36 @@ const DI_CODE = (
   </>
 )
 
+const CRUD_CODE = (
+  <>
+    <span className="t-kw">import</span> {'{ '}<span className="t-cls">Controller</span>, <span className="t-cls">Get</span>, <span className="t-cls">Post</span>, <span className="t-cls">Patch</span>, <span className="t-cls">Delete</span>, <span className="t-cls">Body</span>, <span className="t-cls">Param</span>, <span className="t-cls">Public</span>, <span className="t-cls">Injectable</span>, <span className="t-cls">HonoRouteBuilder</span>{' }'} <span className="t-kw">from</span> <span className="t-str">'hono-forge'</span>;{'\n'}
+    <span className="t-kw">import</span> {'{ '}<span className="t-cls">users</span>, <span className="t-cls">db</span>{' }'} <span className="t-kw">from</span> <span className="t-str">'@/db/schema'</span>;{'\n'}
+    <span className="t-kw">import</span> {'{ '}<span className="t-fn">z</span>{' }'} <span className="t-kw">from</span> <span className="t-str">'zod'</span>;{'\n\n'}
+    <span className="t-cmt">// Drizzle schema</span>{'\n'}
+    <span className="t-kw">const</span> <span className="t-cls">CreateUserSchema</span> = z.<span className="t-fn">object</span>(<span className="t-str">"&#123;"</span> name: z.<span className="t-fn">string</span>(), email: z.<span className="t-fn">string</span>() <span className="t-str">"&#125;"</span>);{'\n\n'}
+    <span className="t-dec">@Injectable</span>(){'\n'}
+    <span className="t-kw">class</span> <span className="t-cls">UserService</span> {'{'}{'\n'}
+    {'  '}<span className="t-fn">getAll</span>() {'{'} <span className="t-kw">return</span> db.<span className="t-fn">select</span>().<span className="t-fn">from</span>(<span className="t-cls">users</span>); {'}'}{'\n'}
+    {'  '}<span className="t-fn">getById</span>(id: <span className="t-kw">string</span>) {'{'} <span className="t-kw">return</span> db.<span className="t-fn">select</span>().<span className="t-fn">from</span>(<span className="t-cls">users</span>).<span className="t-fn">where</span>(<span className="t-cls">eq</span>(<span className="t-cls">users</span>.id, id)); {'}'}{'\n'}
+    {'  '}<span className="t-fn">create</span>(data: <span className="t-kw">any</span>) {'{'} <span className="t-kw">return</span> db.<span className="t-fn">insert</span>(<span className="t-cls">users</span>).<span className="t-fn">values</span>(data); {'}'}{'\n'}
+    {'  '}<span className="t-fn">update</span>(id: <span className="t-kw">string</span>, data: <span className="t-kw">any</span>) {'{'} <span className="t-kw">return</span> db.<span className="t-fn">update</span>(<span className="t-cls">users</span>).<span className="t-fn">set</span>(data).<span className="t-fn">where</span>(<span className="t-cls">eq</span>(<span className="t-cls">users</span>.id, id)); {'}'}{'\n'}
+    {'  '}<span className="t-fn">delete</span>(id: <span className="t-kw">string</span>) {'{'} <span className="t-kw">return</span> db.<span className="t-fn">delete</span>(<span className="t-cls">users</span>).<span className="t-fn">where</span>(<span className="t-cls">eq</span>(<span className="t-cls">users</span>.id, id)); {'}'}{'\n'}
+    {'}'}{'\n\n'}
+    <span className="t-dec">@Controller</span>(<span className="t-str">'/users'</span>){'\n'}
+    <span className="t-kw">class</span> <span className="t-cls">UserController</span> {'{'}{'\n'}
+    {'  '}<span className="t-kw">constructor</span>(<span className="t-kw">private</span> service: <span className="t-cls">UserService</span>) {'{}'}{'\n'}
+    {'  '}<span className="t-dec">@Get</span>() <span className="t-dec">@Public</span>() <span className="t-fn">list</span>() {'{'} <span className="t-kw">return</span> <span className="t-kw">this</span>.service.<span className="t-fn">getAll</span>(); {'}'}{'\n'}
+    {'  '}<span className="t-dec">@Get</span>(<span className="t-str">'/:id'</span>) <span className="t-dec">@Public</span>() <span className="t-fn">get</span>(<span className="t-dec">@Param</span>(<span className="t-str">'id'</span>) id: <span className="t-kw">string</span>) {'{'} <span className="t-kw">return</span> <span className="t-kw">this</span>.service.<span className="t-fn">getById</span>(id); {'}'}{'\n'}
+    {'  '}<span className="t-dec">@Post</span>() <span className="t-fn">create</span>(<span className="t-dec">@Body</span>(<span className="t-cls">CreateUserSchema</span>) body: <span className="t-kw">any</span>) {'{'} <span className="t-kw">return</span> <span className="t-kw">this</span>.service.<span className="t-fn">create</span>(body); {'}'}{'\n'}
+    {'  '}<span className="t-dec">@Patch</span>(<span className="t-str">'/:id'</span>) <span className="t-fn">update</span>(<span className="t-dec">@Param</span>(<span className="t-str">'id'</span>) id: <span className="t-kw">string</span>, <span className="t-dec">@Body</span>() body: <span className="t-kw">any</span>) {'{'} <span className="t-kw">return</span> <span className="t-kw">this</span>.service.<span className="t-fn">update</span>(id, body); {'}'}{'\n'}
+    {'  '}<span className="t-dec">@Delete</span>(<span className="t-str">'/:id'</span>) <span className="t-fn">remove</span>(<span className="t-dec">@Param</span>(<span className="t-str">'id'</span>) id: <span className="t-kw">string</span>) {'{'} <span className="t-kw">return</span> <span className="t-kw">this</span>.service.<span className="t-fn">delete</span>(id); {'}'}{'\n'}
+    {'}'}{'\n\n'}
+    <span className="t-kw">const</span> app = <span className="t-kw">new</span> <span className="t-cls">Hono</span>();{'\n'}
+    app.<span className="t-fn">route</span>(<span className="t-str">'/'</span>, <span className="t-cls">HonoRouteBuilder</span>.<span className="t-fn">build</span>(<span className="t-cls">UserController</span>));{'\n'}
+    <span className="t-kw">export default</span> app;
+  </>
+)
+
 const MIDDLEWARE_CODE = (
   <>
     <span className="t-kw">import</span> {'{ '}<span className="t-cls">Middleware</span>, <span className="t-cls">Throttle</span>, <span className="t-cls">Memoize</span>, <span className="t-cls">Cors</span>{' }'} <span className="t-kw">from</span> <span className="t-str">'hono-forge'</span>;{'\n'}
@@ -206,12 +236,13 @@ const MIDDLEWARE_CODE = (
 )
 
 const TABS = [
-  { id: 'basic',    label: 'basic',    code: BASIC_CODE    },
-  { id: 'di',       label: 'di',       code: DI_CODE       },
-  { id: 'auth',     label: 'auth',     code: AUTH_CODE     },
+  { id: 'basic', label: 'basic', code: BASIC_CODE },
+  { id: 'di', label: 'di', code: DI_CODE },
+  { id: 'auth', label: 'auth', code: AUTH_CODE },
   { id: 'middleware', label: 'middleware', code: MIDDLEWARE_CODE },
   { id: 'realtime', label: 'realtime', code: REALTIME_CODE },
-  { id: 'errors',   label: 'errors',   code: ERRORS_CODE   },
+  { id: 'errors', label: 'errors', code: ERRORS_CODE },
+  { id: 'crud', label: 'crud', code: CRUD_CODE },
 ]
 
 export default function CodeShowcase() {
