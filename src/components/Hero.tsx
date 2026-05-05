@@ -41,7 +41,7 @@ export default function Hero() {
       <h1>
         Hono with<br />
         <span className="accent">NestJS-style</span> decorators.<br />
-        <span className="dim">production ready.</span>
+        {/* <span className="dim">production ready.</span> */}
       </h1>
 
       <p className="hero-sub">
