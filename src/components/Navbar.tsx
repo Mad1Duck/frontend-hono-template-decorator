@@ -4,6 +4,7 @@ const NAV_LINKS = [
   { label: 'Usage',        href: '#usage'        },
   { label: 'Architecture', href: '#architecture' },
   { label: 'Changelog',    href: '#changelog'    },
+  { label: 'Feedback',     href: '#feedback'     },
 ]
 
 export default function Navbar() {

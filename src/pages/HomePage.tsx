@@ -7,6 +7,7 @@ import CodeShowcase from '@/components/CodeShowcase'
 import DecoratorsRef from '@/components/DecoratorsRef'
 import Architecture from '@/components/Architecture'
 import Changelog from '@/components/Changelog'
+import Feedback from '@/components/Feedback'
 import Footer from '@/components/Footer'
 
 export default function HomePage() {
@@ -41,6 +42,8 @@ export default function HomePage() {
       <Architecture />
       <div className="divider" />
       <Changelog />
+      <div className="divider" />
+      <Feedback />
       <Footer />
     </>
   )
