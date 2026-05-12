@@ -12,4 +12,4 @@ RUN bun run build
 
 EXPOSE 3001
 
-CMD ["npm", "run", "preview"]
+CMD ["bun", "run", "preview"]
