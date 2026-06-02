@@ -628,6 +628,8 @@ pre {
   transition: all 0.2s;
 }
 
+.dec-item--hoverable { cursor: pointer; }
+.dec-item--hoverable:hover { border-color: rgba(255,107,53,0.4); background: var(--surface2); }
 .dec-item:hover { border-color: rgba(255,107,53,0.3); background: var(--surface2); }
 
 .dec-name {
@@ -636,6 +638,26 @@ pre {
   color: var(--accent);
   font-weight: 600;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dec-hint {
+  font-size: 0.58rem;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.dec-item--hoverable:hover .dec-hint {
+  opacity: 1;
+  color: var(--accent);
+  border-color: rgba(255,107,53,0.4);
 }
 
 .dec-desc {
@@ -643,6 +665,53 @@ pre {
   font-size: 0.7rem;
   color: var(--muted);
   line-height: 1.5;
+}
+
+/* ── Decorator tooltip ── */
+.dec-tooltip {
+  position: absolute;
+  z-index: 1000;
+  width: 500px;
+  background: #0d1117;
+  border: 1px solid rgba(255,107,53,0.25);
+  border-radius: 8px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,107,53,0.1);
+  overflow: hidden;
+  animation: tooltip-in 0.15s ease;
+  pointer-events: auto;
+}
+
+@keyframes tooltip-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dec-tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.dec-tooltip-title {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-left: 0.25rem;
+}
+
+.dec-tooltip-code {
+  margin: 0;
+  padding: 1rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: #e6edf3;
+  white-space: pre;
+  overflow-x: auto;
+  background: transparent;
 }
 
 /* ════════════════════════════════════════════
