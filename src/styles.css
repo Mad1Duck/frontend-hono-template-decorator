@@ -669,8 +669,8 @@ pre {
 
 /* ── Decorator tooltip ── */
 .dec-tooltip {
-  position: absolute;
-  z-index: 1000;
+  position: fixed;
+  z-index: 9999;
   width: 500px;
   background: #0d1117;
   border: 1px solid rgba(255,107,53,0.25);

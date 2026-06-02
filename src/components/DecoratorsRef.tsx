@@ -153,12 +153,21 @@ export default function DecoratorsRef() {
   const handleMouseEnter = (item: DecItem, e: React.MouseEvent) => {
     if (!item.example) return
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    setTooltip({
-      name: item.name,
-      example: item.example,
-      x: rect.left,
-      y: rect.bottom + window.scrollY + 8,
-    })
+    const TOOLTIP_W = 500
+    const TOOLTIP_MAX_H = 400
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+
+    // Prefer below the item, flip above if not enough space
+    let top = rect.bottom + 8
+    if (top + TOOLTIP_MAX_H > vh) top = rect.top - TOOLTIP_MAX_H - 8
+
+    // Clamp horizontally
+    let left = rect.left
+    if (left + TOOLTIP_W > vw - 12) left = vw - TOOLTIP_W - 12
+    if (left < 12) left = 12
+
+    setTooltip({ name: item.name, example: item.example, x: left, y: top })
   }
 
   const handleMouseLeave = () => setTooltip(null)
@@ -198,11 +207,11 @@ export default function DecoratorsRef() {
         ))}
       </div>
 
-      {/* Tooltip */}
+      {/* Tooltip — fixed so it escapes any overflow:hidden ancestor */}
       {tooltip && (
         <div
           className="dec-tooltip"
-          style={{ top: tooltip.y, left: Math.min(tooltip.x, window.innerWidth - 520) }}
+          style={{ position: 'fixed', top: tooltip.y, left: tooltip.x }}
           onMouseEnter={() => setTooltip(tooltip)}
           onMouseLeave={handleMouseLeave}
         >
