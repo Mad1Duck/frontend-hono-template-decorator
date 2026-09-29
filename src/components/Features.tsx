@@ -12,12 +12,12 @@ const FEATURES = [
   {
     icon: '✅', title: 'Zod Validation',
     desc: 'Type-safe parameter binding for body, query, and route params. Schema-first with full TypeScript inference.',
-    tags: ['@Body(schema)', '@Query(schema)', '@Param'],
+    tags: ['Body(c, schema)', 'Query(c, schema)', 'Param(c, name)'],
   },
   {
     icon: '📡', title: 'SSE & WebSocket',
-    desc: 'First-class streaming with @Sse and @WebSocket decorators. Pluggable upgrader for any Hono runtime.',
-    tags: ['@Sse', '@WebSocket', '@SseStream'],
+    desc: 'First-class streaming with @Sse and @WebSocket decorators. Built-in keepalive and pluggable upgrader for any Hono runtime.',
+    tags: ['@Sse(keepAliveMs)', '@WebSocket', 'SSEStreamingApi'],
   },
   {
     icon: '🔁', title: 'Pub/Sub Channels',
@@ -26,28 +26,53 @@ const FEATURES = [
   },
   {
     icon: '🛡️', title: 'Rate Limiting',
-    desc: 'Per-route rate limiting with custom window, max requests, and key generators. Pluggable for any backend.',
-    tags: ['@RateLimit', 'custom keyGen'],
+    desc: 'Per-route rate limiting with X-RateLimit-* headers out of the box. In-memory limiter by default, pluggable for any backend.',
+    tags: ['@RateLimit', 'X-RateLimit-*', 'custom keyGen'],
   },
   {
     icon: '📊', title: 'Request Logging',
-    desc: 'Pluggable logger with IP extraction, device detection, and duration tracking. Inject IP/device directly into handlers.',
-    tags: ['@Ip', '@Device', '@UserAgent'],
+    desc: 'Pluggable logger with IP extraction, device detection, and duration tracking. Read IP/device anywhere in handlers.',
+    tags: ['Ip(c)', 'Device(c)', 'UserAgent(c)'],
   },
   {
     icon: '💉', title: 'Dependency Injection',
     desc: 'Lightweight DI container with singleton, transient, and request-scoped lifetimes. Lifecycle hooks, circular dependency detection, and auto-resolution.',
-    tags: ['@Injectable', '@Singleton', '@RequestScoped', '@Inject'],
+    tags: ['@Injectable', '@Singleton', '@RequestScoped', 'OnInit/OnDestroy'],
   },
   {
     icon: '📖', title: 'OpenAPI 3.1 + Scalar',
-    desc: 'Auto-generate a full OpenAPI spec from your decorators. Serve interactive Scalar docs with one line.',
-    tags: ['OpenAPIGenerator', '@ApiDoc', '@ApiTags'],
+    desc: 'Auto-generate a full OpenAPI spec from your decorators — including request bodies and query params. Serve interactive Scalar docs with one line.',
+    tags: ['OpenAPIGenerator', '@ApiDoc', '@ApiBody', '@ApiQuery'],
   },
   {
     icon: '⚡', title: 'Interceptors',
     desc: 'Cross-cutting concerns without middleware clutter. Retry, timeout, transform, cache, and metrics decorators.',
     tags: ['@Retry', '@Timeout', '@Transform', '@Cache', '@TrackMetrics'],
+  },
+  {
+    icon: '🧩', title: 'Modules',
+    desc: 'Compose your app from @Module blocks. buildModule() traverses imports recursively and fail-fast validates DI at boot.',
+    tags: ['@Module', 'buildModule', 'describe()'],
+  },
+  {
+    icon: '♻️', title: 'Resilience',
+    desc: 'Production-grade request safety: idempotency keys, concurrent dedupe, and circuit breakers for external calls.',
+    tags: ['@Idempotent', '@SingleFlight', '@CircuitBreaker'],
+  },
+  {
+    icon: '📮', title: 'Event Bus & Scheduler',
+    desc: 'In-process pub/sub for decoupled services, plus periodic jobs. Listeners resolve through the DI container.',
+    tags: ['@OnEvent', 'events.emit', '@Interval'],
+  },
+  {
+    icon: '🧪', title: 'Testing & Typed Client',
+    desc: 'createTestingModule() mocks providers cleanly. generateClientTypes() emits a fully-typed fetch client from your controllers.',
+    tags: ['createTestingModule', 'createClient', 'generateClientTypes'],
+  },
+  {
+    icon: '🛟', title: 'Ops Ready',
+    desc: 'Health checks, graceful shutdown, route table printing, and pluggable logging — the boring parts are done for you.',
+    tags: ['mountHealth', 'gracefulShutdown', 'printRoutes', 'LOGGER'],
   },
   {
     icon: '🌐', title: 'Built-in Middleware',

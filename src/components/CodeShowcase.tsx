@@ -55,7 +55,7 @@ const AUTH_CODE = (
     {'  '}<span className="t-cmt">// Require authentication</span>{'\n'}
     {'  '}<span className="t-dec">@Get</span>(<span className="t-str">'/dashboard'</span>) <span className="t-dec">@RequireAuth</span>(){'\n'}
     {'  '}<span className="t-kw">async</span> <span className="t-fn">dashboard</span>(c: <span className="t-cls">Context</span>) {'{'}{'\n'}
-    {'    '}<span className="t-kw">const</span> user = <span className="t-fn">User</span>{'<'}<span className="t-cls">AuthUser</span>{'>'}{'\n'}
+    {'    '}<span className="t-kw">const</span> user = <span className="t-fn">User</span>{'<'}<span className="t-cls">AuthUser</span>{'>'}(<span className="t-fn">c</span>){'\n'}
     {'    '}<span className="t-kw">return</span> {'{'} message: <span className="t-str">{`\`Welcome \${user.name}\``}</span> {'}'};{'\n'}
     {'  '}{'}'}{'\n\n'}
     {'  '}<span className="t-cmt">// Role-based access control</span>{'\n'}
@@ -76,27 +76,20 @@ const AUTH_CODE = (
 
 const REALTIME_CODE = (
   <>
-    <span className="t-kw">import</span> {'{ '}<span className="t-cls">channels</span>, <span className="t-cls">SseChannelClient</span>, <span className="t-cls">Param</span>, <span className="t-cls">Ip</span>{' }'} <span className="t-kw">from</span> <span className="t-str">'hono-forge'</span>;{'\n'}
+    <span className="t-kw">import</span> {'{ '}<span className="t-cls">channels</span>, <span className="t-cls">ChannelRoute</span>, <span className="t-cls">Sse</span>, <span className="t-cls">Param</span>{' }'} <span className="t-kw">from</span> <span className="t-str">'hono-forge'</span>;{'\n'}
     <span className="t-kw">import type</span> {'{ '}<span className="t-cls">Context</span>{' }'} <span className="t-kw">from</span> <span className="t-str">'hono'</span>;{'\n'}
     <span className="t-kw">import type</span> {'{ '}<span className="t-cls">SSEStreamingApi</span>{' }'} <span className="t-kw">from</span> <span className="t-str">'hono/streaming'</span>;{'\n\n'}
     <span className="t-dec">@Controller</span>(<span className="t-str">'/events'</span>){'\n'}
     <span className="t-kw">class</span> <span className="t-cls">EventController</span> {'{'}{'\n\n'}
-    {'  '}<span className="t-cmt">// SSE: stream receives (c, stream) automatically</span>{'\n'}
-    {'  '}<span className="t-dec">@Sse</span>(<span className="t-str">'/user/:userId'</span>) <span className="t-dec">@RequireAuth</span>(){'\n'}
+    {'  '}<span className="t-cmt">// @ChannelRoute bridges pub/sub → SSE automatically:</span>{'\n'}
+    {'  '}<span className="t-cmt">// subscribe on connect, hold stream open, unsubscribe on abort.</span>{'\n'}
+    {'  '}<span className="t-dec">@Sse</span>(<span className="t-str">'/user/:userId'</span>, {'{'} keepAliveMs: <span className="t-num">15_000</span> {'}'}){'\n'}
+    {'  '}<span className="t-dec">@ChannelRoute</span>((c: <span className="t-cls">Context</span>) =&gt; <span className="t-str">{`\`user:\${Param(c, 'userId')}\``}</span>){'\n'}
     {'  '}<span className="t-kw">async</span> <span className="t-fn">userFeed</span>(c: <span className="t-cls">Context</span>, stream: <span className="t-cls">SSEStreamingApi</span>) {'{'}{'\n'}
-    {'    '}<span className="t-kw">const</span> userId = <span className="t-fn">Param</span>(c, <span className="t-str">'userId'</span>);{'\n'}
-    {'    '}<span className="t-kw">const</span> ip     = <span className="t-fn">Ip</span>(c);{'\n'}
-    {'    '}<span className="t-kw">const</span> client = <span className="t-kw">new</span> <span className="t-cls">SseChannelClient</span>(userId, stream);{'\n'}
-    {'    '}<span className="t-kw">await</span> channels.<span className="t-fn">subscribe</span>(<span className="t-str">{`\`user:\${userId}\``}</span>, client);{'\n'}
-    {'    '}stream.<span className="t-fn">onAbort</span>(() =&gt;{'\n'}
-    {'      '}channels.<span className="t-fn">unsubscribe</span>(<span className="t-str">{`\`user:\${userId}\``}</span>, userId));{'\n\n'}
-    {'    '}<span className="t-kw">while</span> (!stream.closed) {'{'}{'\n'}
-    {'      '}<span className="t-kw">await</span> stream.<span className="t-fn">sleep</span>(<span className="t-num">30_000</span>);{'\n'}
-    {'      '}<span className="t-kw">await</span> stream.<span className="t-fn">writeSSE</span>({'{'} event: <span className="t-str">'ping'</span>, data: <span className="t-str">''</span> {'}'});{'\n'}
-    {'    '}{'}'}{'\n'}
+    {'    '}<span className="t-cmt">// nothing to do — channel events stream to this client</span>{'\n'}
     {'  '}{'}'}{'\n'}
     {'}'}{'\n\n'}
-    <span className="t-cmt">// Push from anywhere in the app</span>{'\n'}
+    <span className="t-cmt">// Push from anywhere in the app — services, jobs, webhooks</span>{'\n'}
     <span className="t-kw">await</span> channels.<span className="t-fn">publish</span>(<span className="t-str">'user:42'</span>, <span className="t-str">'order.created'</span>, {'{'} id: <span className="t-num">123</span> {'}'});
   </>
 )
@@ -199,7 +192,7 @@ const CRUD_CODE = (
 
 const MIDDLEWARE_CODE = (
   <>
-    <span className="t-kw">import</span> {'{ '}<span className="t-cls">Middleware</span>, <span className="t-cls">Throttle</span>, <span className="t-cls">Memoize</span>, <span className="t-cls">Cors</span>, <span className="t-cls">User</span>{' }'} <span className="t-kw">from</span> <span className="t-str">'hono-forge'</span>;{'\n'}
+    <span className="t-kw">import</span> {'{ '}<span className="t-cls">Middleware</span>, <span className="t-cls">Throttle</span>, <span className="t-cls">Memoize</span>, <span className="t-cls">Cors</span>, <span className="t-cls">RequireAuth</span>, <span className="t-cls">Public</span>, <span className="t-cls">User</span>{' }'} <span className="t-kw">from</span> <span className="t-str">'hono-forge'</span>;{'\n'}
     <span className="t-kw">import type</span> {'{ '}<span className="t-cls">Context</span>, <span className="t-cls">Next</span>{' }'} <span className="t-kw">from</span> <span className="t-str">'hono'</span>;{'\n\n'}
     <span className="t-cmt">// Custom middleware: request logging</span>{'\n'}
     <span className="t-kw">const</span> <span className="t-cls">requestLogger</span> = <span className="t-kw">async</span> (c: <span className="t-cls">Context</span>, next: <span className="t-cls">Next</span>) {'='}&gt; {'{'}{'\n'}
@@ -228,7 +221,7 @@ const MIDDLEWARE_CODE = (
     {'  '}<span className="t-dec">@Get</span>(<span className="t-str">'/profile'</span>) <span className="t-dec">@RequireAuth</span>(){'\n'}
     {'  '}<span className="t-dec">@Memoize</span>({'{'} scope: <span className="t-str">'request'</span>, ttl: <span className="t-num">5_000</span> {'}'}){'\n'}
     {'  '}<span className="t-kw">async</span> <span className="t-fn">getProfile</span>(c: <span className="t-cls">Context</span>) {'{'}{'\n'}
-    {'    '}<span className="t-kw">const</span> user = <span className="t-fn">User</span>{'<'}<span className="t-cls">AuthUser</span>{'>'}{'\n'}
+    {'    '}<span className="t-kw">const</span> user = <span className="t-fn">User</span>{'<'}<span className="t-cls">AuthUser</span>{'>'}(<span className="t-fn">c</span>){'\n'}
     {'    '}<span className="t-cmt">// Cached per-request, per-user</span>{'\n'}
     {'    '}<span className="t-kw">return</span> <span className="t-kw">await</span> this.userService.<span className="t-fn">findById</span>(user.id);{'\n'}
     {'  '}{'}'}{'\n'}

@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 
 const TECH_BADGES = [
   { label: 'Hono 4.0+',       cls: 'tb-orange' },
-  { label: 'Bun 1.0+',        cls: 'tb-green'  },
+  { label: 'Bun 1.2+',        cls: 'tb-green'  },
+  { label: 'Node 18+',        cls: 'tb-green'  },
   { label: 'TypeScript 5.0+', cls: 'tb-blue'   },
-  { label: 'Zod',             cls: 'tb-yellow' },
+  { label: 'Zod 4',           cls: 'tb-yellow' },
   { label: 'SSE',             cls: 'tb-purple' },
   { label: 'WebSocket',       cls: 'tb-purple' },
   { label: 'Redis',           cls: 'tb-gray'   },
@@ -15,7 +16,7 @@ const INSTALL_CMD = 'bun add hono-forge hono zod'
 
 export default function Hero() {
   const [copied, setCopied] = useState(false)
-  const [version, setVersion] = useState('0.2.1') // fallback
+  const [version, setVersion] = useState('5.0.0') // fallback
 
   useEffect(() => {
     fetch('https://registry.npmjs.org/hono-forge')
@@ -57,7 +58,7 @@ export default function Hero() {
       </h1>
 
       <p className="hero-sub">
-        Controllers, DI, guards, SSE, WebSocket, channels, rate limiting, OpenAPI, structured errors, and trace IDs — all declarative.
+        Controllers, DI, modules, guards, SSE, WebSocket, channels, caching, events, scheduling, resilience, OpenAPI, typed client, and testing — all declarative.
         Install one package. No boilerplate.
       </p>
 

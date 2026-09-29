@@ -15,18 +15,18 @@ interface Release {
 }
 
 export default function Changelog() {
-  const [expandedVersions, setExpandedVersions] = useState<Set<string>>(new Set(['0.2.1']))
+  const [expandedVersions, setExpandedVersions] = useState<Set<string>>(new Set(['5.0.0']))
   const [releases, setReleases] = useState<Release[]>([
     // Fallback data
     {
-      version: '0.2.1',
-      date: '2026-05-05',
-      type: 'patch',
+      version: '5.0.0',
+      date: '2026-09-28',
+      type: 'major',
       changes: [
         {
-          type: 'fixed',
-          title: '@Stateless runtime enforcement',
-          description: 'Resolved @Stateless @Singleton instances are now wrapped in a Proxy'
+          type: 'added',
+          title: 'Modules, filters, channels, typed client',
+          description: '@Module + buildModule, @Catch/@UseFilters, @ChannelRoute, generateClientTypes + createClient'
         }
       ]
     }
@@ -71,7 +71,7 @@ export default function Changelog() {
           // Try to fetch changelog from GitHub
           let changes: Change[] = []
           try {
-            const changelogUrl = 'https://raw.githubusercontent.com/Mad1Duck/hono-decorator/main/CHANGELOG.md'
+            const changelogUrl = 'https://raw.githubusercontent.com/Mad1Duck/hono-decorator/master/CHANGELOG.md'
             const changelogResponse = await fetch(changelogUrl)
             
             if (changelogResponse.ok) {
@@ -195,7 +195,7 @@ export default function Changelog() {
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'var(--border)', border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden' }} className="reveal">
-        {releases.map((release, idx) => (
+        {releases.map((release) => (
           <div key={release.version} style={{ background: 'var(--surface)' }}>
             <button
               style={{
