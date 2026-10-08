@@ -10,9 +10,9 @@ const FEATURES = [
     tags: ['@RequireAuth', '@RequireRole', '@Public'],
   },
   {
-    icon: '✅', title: 'Zod Validation',
-    desc: 'Type-safe parameter binding for body, query, and route params. Schema-first with full TypeScript inference.',
-    tags: ['Body(c, schema)', 'Query(c, schema)', 'Param(c, name)'],
+    icon: '✅', title: 'Zod Validation → Spec',
+    desc: '@Validate gives one source of truth: schemas validate requests AND generate the OpenAPI spec — docs can\'t drift from validation.',
+    tags: ['@Validate', 'Body(c)', 'Query(c)', 'Params(c)'],
   },
   {
     icon: '📡', title: 'SSE & WebSocket',
