@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import ApiTester from "@/components/ApiTester";
 import Architecture from "@/components/Architecture";
 import Changelog from "@/components/Changelog";
 import CodeShowcase from "@/components/CodeShowcase";
@@ -42,6 +43,8 @@ export default function HomePage() {
 			<DecoratorsRef />
 			<div className="divider" />
 			<Architecture />
+			<div className="divider" />
+			<ApiTester />
 			<div className="divider" />
 			<Changelog />
 			<div className="divider" />
