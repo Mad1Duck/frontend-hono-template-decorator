@@ -110,9 +110,11 @@ const CLI_USAGE = `bunx hono-forge <command> <entry-file> [options]
 # the entry file must export an @Module or @Controller class
 bunx hono-forge routes ./src/app.module.ts
 
-# TypeScript entries need Bun (bunx). For Node, point at
-# compiled JS instead:
-node node_modules/hono-forge/dist/cli.js routes ./dist/app.module.js
+# TypeScript entries need Bun at runtime. If bunx/npx resolves the
+# bin to a Node shim (Windows), the CLI detects it and transparently
+# re-execs through Bun when it's on PATH — otherwise it prints the
+# exact fallback command:
+bun node_modules/hono-forge/dist/cli.js routes ./src/app.module.ts
 
 # several exports in one file? pick one:
 bunx hono-forge routes ./src/index.ts --export AppModule
@@ -308,9 +310,10 @@ export default function DocsPage() {
 						<p className="docs-desc">
 							The CLI reads your decorators <em>without starting the server</em>{" "}
 							— every command takes an entry file that exports an{" "}
-							<code>@Module</code> (or <code>@Controller</code>) class. Run it
-							via <code>bunx</code> so TypeScript files work directly; Node
-							requires a compiled JS entry instead.
+							<code>@Module</code> (or <code>@Controller</code>) class.
+							TypeScript entries run under Bun; if <code>bunx</code>/
+							<code>npx</code> resolves the bin to a Node shim, the CLI detects
+							it and re-execs through Bun automatically.
 						</p>
 						<CodeBlock filename="terminal">{CLI_USAGE}</CodeBlock>
 						<p className="docs-desc">

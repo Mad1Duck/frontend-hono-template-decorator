@@ -212,6 +212,11 @@ export const DOC_GROUPS: DocGroup[] = [
 				example: `container.describe([\n  ...HonoRouteBuilder.moduleProviders(AppModule),\n  ...HonoRouteBuilder.moduleControllers(AppModule),\n]);\n\ncontainer.printGraph([...]);\n//   TodoService   [singleton] → TodoRepo\n//   ⚠ missing: 'Mailer' is not in providers`,
 			},
 			{
+				name: "DI error classes",
+				desc: "DependencyResolutionError — thrown by resolve() when a token isn't in providers/registrations (note: a concrete class decorated with @Injectable() self-registers and never throws this). CircularDependencyError — thrown when the resolution stack revisits a token mid-construction (A → B → A).",
+				example: `import {\n  DependencyResolutionError,\n  CircularDependencyError,\n} from 'hono-forge';\n\ntry {\n  container.resolve(UnregisteredToken);\n} catch (e) {\n  if (e instanceof DependencyResolutionError) { /* … */ }\n}`,
+			},
+			{
 				name: "metadata introspection",
 				desc: "Read decorator metadata for plugin/tooling authors — getClassMetadata(class, key) and getMethodMetadata(target, method, key) read values stored under METADATA_KEYS.* symbols; hasDecorator(target, method, key) is a boolean check. Lower-level getClassMeta/getMethodMeta read from a class's Symbol.metadata record directly.",
 				example: `import {\n  getClassMetadata,\n  getMethodMetadata,\n  hasDecorator,\n  METADATA_KEYS,\n} from 'hono-forge';\n\nconst guards = getMethodMetadata<GuardMetadata[]>(\n  instance, 'findAll', METADATA_KEYS.GUARDS,\n);\nconst isController =\n  getClassMetadata(ctrl, METADATA_KEYS.CONTROLLER) !== undefined;\nconst cached = hasDecorator(instance, 'getUser', METADATA_KEYS.CACHE);`,
@@ -435,6 +440,11 @@ export const DOC_GROUPS: DocGroup[] = [
 		desc: "Attach any Hono middleware at class level (every route) or method level (one route). Built-in decorators wrap Hono's own middleware.",
 		items: [
 			{
+				name: "execution order",
+				desc: "The request pipeline runs class-level @Middleware first, then method-level, then rate limiting (@RateLimit/@Concurrency), guards (@JwtAuth/@RequireRole/…), and validation (@Validate). @Idempotent wraps the handler — replay/dedupe happens around execution. @Throttle sits inside the method body (it throws when the handler is invoked too soon). On the way out, handler output passes @Serialize/@Transform, then interceptors, then the response.",
+				example: `// request → class @Middleware → method @Middleware\n//        → @RateLimit / @Concurrency → guards → @Validate\n//        → @Idempotent (wraps) → handler\n//        → @Serialize / @Transform → interceptors → response\n\n// so a method-level middleware still runs BEFORE @JwtAuth —\n// put auth at class level, or verify inside the middleware itself`,
+			},
+			{
 				name: "@Middleware(...fns)",
 				desc: "Attaches Hono middleware at class level (all routes) or method level (one route). Multiple middleware run in order.",
 				example: `const logMw = async (c: Context, next: Next) => {\n  console.log(c.req.method, c.req.path);\n  await next();\n};\n\n@Controller('/api')\n@Middleware(logMw)          // class-level\nclass ApiController {\n  @Get()\n  @Middleware(tracingMw)    // method-level\n  list() { /* ... */ }\n}`,
@@ -540,8 +550,8 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "@Idempotent(opts?)",
-				desc: "Replays the stored response when a client retries with the same Idempotency-Key header — including concurrent duplicates (handler runs once). Only successful responses are stored; ttl defaults to 24h. Uses the configured CacheAdapter.",
-				example: `@Post('/orders')\n@Idempotent()\nasync createOrder(c: Context) {\n  // client sends: Idempotency-Key: order-req-123\n  // retry with same key → same response, no double charge\n  return this.svc.charge(await Body(c, OrderSchema));\n}`,
+				desc: "Replays the stored response when a client retries with the same Idempotency-Key header — including concurrent duplicates (handler runs once). Same key + different request body → 409 Conflict (Stripe-style body-hash check, on by default — hash: false to opt out). scope namespaces keys per tenant/user. Only successful responses are stored; ttl defaults to 24h. Uses the configured CacheAdapter — the default in-memory store does NOT survive restarts; inject a durable adapter in production.",
+				example: `@Post('/orders')\n@Idempotent({\n  scope: (c) => User(c)?.tenantId ?? 'anon', // per-tenant namespace\n  ttl: 60_000,\n})\nasync createOrder(c: Context) {\n  // client sends: Idempotency-Key: order-req-123\n  // retry same key + same body → same response, no double charge\n  // retry same key + different body → 409 Conflict\n  return this.svc.charge(await Body(c, OrderSchema));\n}`,
 			},
 			{
 				name: "@SingleFlight()",
@@ -626,6 +636,11 @@ export const DOC_GROUPS: DocGroup[] = [
 				name: "@ChannelRoute(channel)",
 				desc: "Bridges a pub/sub channel to an @Sse or @WebSocket route — subscribes a client on connect, unsubscribes on disconnect, pushes every published event to the stream/socket. Static string or fn of Context.",
 				example: `@Sse('/user/:userId')\n@ChannelRoute((c) => \`user:\${Param(c, 'userId')}\`)\nasync userFeed(c: Context, stream: SSEStreamingApi) {\n  // subscription + hold-open handled automatically\n}\n\nawait channels.publish('user:42', 'order.created', data);`,
+			},
+			{
+				name: "@ChannelAuth(authorize)",
+				desc: "Authorizes the resolved channel before the SSE/WS upgrade completes — runs as middleware, receives (c, channel), returns false → 403. Pair with token verification at upgrade (e.g. hono/jwt verify of ?token= or Authorization) for the standard authenticated-channel recipe.",
+				example: `import { verify } from 'hono/jwt';\n\n// 1. authenticate at upgrade — method middleware\nconst wsAuth = async (c: Context, next: Next) => {\n  const token = c.req.query('token');\n  if (!token) return c.json({ error: 'Unauthorized' }, 401);\n  c.set('user', await verify(token, JWT_SECRET));\n  await next();\n};\n\n// 2. authorize the resolved channel\n@WebSocket('/outlet/:outletId/kds/:station')\n@Middleware(wsAuth)\n@ChannelRoute((c) =>\n  \`outlet:\${Param(c, 'outletId')}:kds:\${Param(c, 'station')}\`)\n@ChannelAuth((c, channel) =>\n  User(c)?.outletIds?.includes(Param(c, 'outletId')) ?? false)\nkds(c: Context) { /* ... */ }`,
 			},
 			{
 				name: "channels.subscribe / unsubscribe / publish",
@@ -730,6 +745,11 @@ export const DOC_GROUPS: DocGroup[] = [
 				name: "mountMetrics(app, opts?)",
 				desc: "Mounts GET /metrics in Prometheus text format — http_requests_total + http_request_duration_seconds histogram labeled by method/route/status. Mount BEFORE building routes; the metrics path is never self-counted.",
 				example: `const app = new Hono();\nmountMetrics(app); // before buildModule\n\n// or: createApp(AppModule, { metrics: true })\n// GET /metrics → scrape-ready exposition text`,
+			},
+			{
+				name: "getMetricsRegistry()",
+				desc: "Returns the shared MetricsRegistry — read counters/histograms programmatically (custom exporters, tests, in-process dashboards) without scraping /metrics.",
+				example: `const reg = getMetricsRegistry();\nreg.counter('jobs_processed').inc();\n// or snapshot for a test assertion\nexpect(reg.counter('http_requests_total').get()).toBeGreaterThan(0);`,
 			},
 		],
 	},
