@@ -19,7 +19,8 @@ export default function ApiTester() {
 			<p className="section-desc">
 				hono-forge can emit ready-to-execute{" "}
 				<code>.flow.yaml</code> files straight from your route metadata —
-				CRUD chains, sample bodies from <code>@Validate</code> schemas, auth
+				CRUD chains, sample bodies from <code>@Validate</code>/
+				<code>@ApiBody</code> schemas, auth
 				header placeholders, and SSE/WS nodes. Import them into{" "}
 				<strong>api-tester</strong> (our Electron API client) and hit Run.
 			</p>
