@@ -1,191 +1,245 @@
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import CodeBlock from '@/components/CodeBlock'
+import { DOC_GROUPS, slugify } from '#/data/decorators'
 
-const INSTALL = `bun add hono-forge
+const INSTALL = `bun add hono-forge hono zod
 # or
-npm install hono-forge`
+npm install hono-forge hono zod`
+
+const TSCONFIG = `{
+  "compilerOptions": {
+    "target": "ESNext"
+  }
+}
+// TC39 Stage 3 decorators — no experimentalDecorators,
+// no reflect-metadata. Bun >= 1.2 required (1.3 recommended).`
 
 const SCAFFOLD = `bunx hono-forge init my-api
 cd my-api
 bun install
-bun run dev`
+bun run dev
+# serves /hello, /health, /openapi.json and docs at /docs`
 
-const CONTROLLER = `import { Controller, Get, Post, Body, Param, Injectable, Public } from 'hono-forge'
+const QUICKSTART = `import { Hono } from 'hono'
+import type { Context } from 'hono'
+import {
+  Controller, Get, Post,
+  Injectable, Body, Param,
+  HonoRouteBuilder,
+} from 'hono-forge'
 import { z } from 'zod'
 
-const CreateTodoSchema = z.object({
-  title: z.string().min(1),
+const CreateUserSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
 })
 
 @Injectable()
-class TodoService {
-  private todos: { id: number; title: string }[] = []
-  list() { return this.todos }
-  create(title: string) {
-    const todo = { id: this.todos.length + 1, title }
-    this.todos.push(todo)
-    return todo
-  }
+class UserService {
+  getAll() { return [{ id: 1, name: 'Alice' }] }
+  create(data: { name: string; email: string }) { return { id: 2, ...data } }
 }
 
-@Controller('/todos')
-@Injectable([TodoService])
-class TodoController {
-  constructor(private todoService: TodoService) {}
+@Controller('/users')
+@Injectable([UserService])
+class UserController {
+  constructor(private userService: UserService) {}
 
-  @Get() @Public()
-  list() { return this.todoService.list() }
+  @Get()
+  list() { return this.userService.getAll() }
 
   @Post()
-  async create(c: any) {
-    const dto = await Body(c, CreateTodoSchema)
-    return this.todoService.create(dto.title)
+  async create(c: Context) {
+    const body = await Body(c, CreateUserSchema)
+    return this.userService.create(body)
   }
-}`
 
-const APP = `import { Hono } from 'hono'
-import { HonoRouteBuilder } from 'hono-forge'
-import { TodoController } from './todo.controller'
+  @Get('/:id')
+  getOne(c: Context) { return { id: Param(c, 'id') } }
+}
 
 const app = new Hono()
-app.route('/', HonoRouteBuilder.build(TodoController))
+app.route('/', HonoRouteBuilder.build(UserController))
+export default app`
+
+const CREATE_APP = `import { createApp } from 'hono-forge'
+
+const app = createApp(AppModule, {
+  health: { probes: true, checks: { db: () => db.ping() } }, // /health + /health/live + /health/ready
+  metrics: true,                                            // GET /metrics (Prometheus)
+  openapi: { info: { title: 'My API', version: '1.0.0' } }, // GET /docs + /openapi.json
+  cors: true,                                               // global CORS
+  printRoutes: true,                                        // route table at startup
+  shutdown: { timeoutMs: 10_000 },                          // graceful SIGINT/SIGTERM
+})
 
 export default app`
 
 const MODULE = `import { Module } from 'hono-forge'
-import { TodoController } from './todo.controller'
+import { Hono } from 'hono'
+import { HonoRouteBuilder } from 'hono-forge'
 
-@Module({ controllers: [TodoController] })
+@Module({ controllers: [UserController], providers: [UserService] })
+class UserModule {}
+
+@Module({ imports: [UserModule], controllers: [OrderController] })
 class AppModule {}
 
-const app = createApp(AppModule, { openapi: true })
-// GET /docs    → Scalar interactive docs
-// GET /openapi.json → OpenAPI 3.1 spec`
+const app = new Hono()
+app.route('/', HonoRouteBuilder.buildModule(AppModule))
+export default app`
 
-const CLI = `# OpenAPI spec
-bunx hono-forge openapi ./src/app.module.ts
+const CONFIGURE = `HonoRouteBuilder.configure({
+  guardExecutor,      // auth decisions for guard decorators
+  rateLimiterFactory, // swap @RateLimit backend (e.g. redisRateLimiter)
+  cacheAdapter,       // swap @Cache/@Idempotent store (get/set/delete/deletePattern)
+  webSocketUpgrader,  // upgradeWebSocket from hono/bun, cf-workers, ...
+  requestLogger,      // (entry) => per-request log record
+  onError,            // (err, c) => Response | void — global error hook
+  errorFormat,        // 'envelope' (default) | 'problem' (RFC 9457)
+  exposeStack,        // false (default) | true | 'development'
+  onRequestStart,     // ({ method, path, traceId, ip, userAgent }) => span hook
+  trailingSlash,      // 'ignore' (default) | 'strip' | 'add'
+})`
 
-# Typed client for your frontend
-bunx hono-forge client ./src/app.module.ts --out ./routes.gen.ts
-
-# Static wiring check (CI guard)
-bunx hono-forge doctor ./src/app.module.ts
-
-# api-tester flows
-bunx hono-forge flows ./src/app.module.ts --out ./flows`
-
-const CLIENT = `import { createClient } from 'hono-forge'
-import type { AppRoutes } from './routes.gen'
-
-const api = createClient<AppRoutes>('http://localhost:3000')
-const todos = await api('GET /todos')
-//    ^ typed array of TodoService['list'] output`
-
-const DECORATORS = `@Get() / @Post() / @Patch() / @Delete()
-@Public()              // skip auth
-@RequireAuth()         // require auth guard
-@JwtAuth('secret')     // JWT middleware
-@Validate()            // validate + coerce body/query/params
-@Cache({ ttlMs: 5000 }) // response cache
-@RateLimit({ max: 100, windowMs: 60_000 })
-@Middleware(...)        // add Hono middleware to one route
-@UseFilters(MyFilter)   // error filter
-@OnEvent('user.created') // event listener`
-
-const TEST = `import { createTestingModule } from 'hono-forge'
-
-const { build } = createTestingModule({ controllers: [TodoController] })
-const app = build()
-const res = await app.request('/todos')
-expect(res.status).toBe(200)`
-
-const sections = [
-  { id: 'install', label: 'Install', title: 'Install & scaffold' },
-  { id: 'controller', label: 'Controllers', title: 'Controllers & routes' },
-  { id: 'module', label: 'Modules', title: 'Modules, DI & OpenAPI' },
-  { id: 'cli', label: 'CLI', title: 'CLI commands' },
-  { id: 'decorators', label: 'Decorators', title: 'Decorator reference' },
-  { id: 'client', label: 'Typed client', title: 'Typed fetch client' },
-  { id: 'test', label: 'Testing', title: 'Testing' },
+const GUIDES = [
+  { id: 'install', label: 'Install & scaffold' },
+  { id: 'quickstart', label: 'Quick start' },
+  { id: 'modules-app', label: 'Modules & createApp' },
+  { id: 'configure', label: 'HonoRouteBuilder.configure' },
 ]
+
+const itemId = (groupId: string, name: string) => `${groupId}-${slugify(name)}`
 
 export default function DocsPage() {
   return (
     <>
       <Navbar />
-      <main style={{ paddingTop: '80px' }}>
-        <section>
-          <div className="section-label">documentation</div>
-          <h1 className="section-title">hono-forge docs</h1>
-          <p className="section-desc">
-            Batteries-included Hono framework built on TC39 decorators. Learn how to scaffold, build, and ship an API in minutes.
-          </p>
-
-          <nav className="decorator-list" style={{ marginTop: '2rem' }}>
-            {sections.map((s) => (
-              <a key={s.id} href={`#${s.id}`} className="group">
-                <div style={{ padding: '1rem', border: '1px solid var(--border)', borderRadius: '4px', background: 'var(--surface)', transition: '0.2s' }}>
-                  <span style={{ color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{s.label}</span>
-                  <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text)' }}>{s.title}</div>
-                </div>
+      <div className="docs-layout">
+        <aside className="docs-sidebar">
+          <div className="docs-toc-title">guide</div>
+          {GUIDES.map((g) => (
+            <a key={g.id} href={`#${g.id}`} className="docs-toc-link docs-toc-group">
+              {g.label}
+            </a>
+          ))}
+          <div className="docs-toc-title">decorator & api reference</div>
+          {DOC_GROUPS.map((g) => (
+            <div key={g.id} className="docs-toc-group-block">
+              <a href={`#${g.id}`} className="docs-toc-link docs-toc-group">
+                {g.label}
               </a>
-            ))}
-          </nav>
-        </section>
+              <div className="docs-toc-items">
+                {g.items.map((item) => (
+                  <a key={item.name} href={`#${itemId(g.id, item.name)}`} className="docs-toc-link docs-toc-item">
+                    {item.name}
+                  </a>
+                ))}
+              </div>
+            </div>
+          ))}
+        </aside>
 
-        <section id="install">
-          <div className="section-label">01</div>
-          <h2 className="section-title">Install & scaffold</h2>
-          <p className="section-desc">Add the package to an existing project, or let the CLI generate a runnable starter.</p>
-          <CodeBlock filename="terminal">{INSTALL}</CodeBlock>
-          <CodeBlock filename="terminal">{SCAFFOLD}</CodeBlock>
-        </section>
+        <main className="docs-content">
+          <header className="docs-header">
+            <div className="section-label">documentation</div>
+            <h1 className="section-title">hono-forge docs</h1>
+            <p className="section-desc">
+              Batteries-included Hono framework built on TC39 decorators — controller routing, DI, guards,
+              validation, SSE/WebSocket, OpenAPI, scheduling, and more. Every export is documented below,
+              grouped by what it does.
+            </p>
 
-        <section id="controller">
-          <div className="section-label">02</div>
-          <h2 className="section-title">Controllers & routes</h2>
-          <p className="section-desc">A controller groups HTTP methods and injects services. Validation, auth, and middleware are decorators.</p>
-          <CodeBlock filename="src/todo.controller.ts">{CONTROLLER}</CodeBlock>
-          <CodeBlock filename="src/index.ts">{APP}</CodeBlock>
-        </section>
+            {/* Mobile TOC — sidebar is hidden under 960px */}
+            <nav className="docs-mobile-toc">
+              {GUIDES.map((g) => (
+                <a key={g.id} href={`#${g.id}`} className="docs-chip">
+                  {g.label}
+                </a>
+              ))}
+              {DOC_GROUPS.map((g) => (
+                <a key={g.id} href={`#${g.id}`} className="docs-chip">
+                  {g.label}
+                </a>
+              ))}
+            </nav>
+          </header>
 
-        <section id="module">
-          <div className="section-label">03</div>
-          <h2 className="section-title">Modules, DI & OpenAPI</h2>
-          <p className="section-desc">Use @Module to compose providers and controllers. One line turns metadata into OpenAPI + Scalar docs.</p>
-          <CodeBlock filename="src/app.module.ts">{MODULE}</CodeBlock>
-        </section>
+          <section id="install" className="docs-group">
+            <div className="section-label">01 — guide</div>
+            <h2 className="section-title">Install & scaffold</h2>
+            <p className="docs-desc">
+              Add the package to an existing project, or let the CLI generate a runnable starter with
+              an example controller, OpenAPI docs, health checks, and graceful shutdown already wired.
+            </p>
+            <CodeBlock filename="terminal">{INSTALL}</CodeBlock>
+            <CodeBlock filename="tsconfig.json">{TSCONFIG}</CodeBlock>
+            <CodeBlock filename="terminal">{SCAFFOLD}</CodeBlock>
+          </section>
 
-        <section id="cli">
-          <div className="section-label">04</div>
-          <h2 className="section-title">CLI commands</h2>
-          <p className="section-desc">The hono-forge CLI introspects your module and exports specs, clients, and tests without running the server.</p>
-          <CodeBlock filename="terminal">{CLI}</CodeBlock>
-        </section>
+          <section id="quickstart" className="docs-group">
+            <div className="section-label">02 — guide</div>
+            <h2 className="section-title">Quick start</h2>
+            <p className="docs-desc">
+              A controller groups HTTP methods and injects services through the constructor. Handlers
+              receive the Hono <code>Context</code> directly — route params, query, body and headers are
+              read via typed context helpers. A plain return value is auto-serialized to JSON; a returned
+              <code>Response</code> passes through untouched.
+            </p>
+            <CodeBlock filename="src/index.ts">{QUICKSTART}</CodeBlock>
+          </section>
 
-        <section id="decorators">
-          <div className="section-label">05</div>
-          <h2 className="section-title">Decorator reference</h2>
-          <p className="section-desc">Common decorators available on classes and methods.</p>
-          <CodeBlock filename="decorators">{DECORATORS}</CodeBlock>
-        </section>
+          <section id="modules-app" className="docs-group">
+            <div className="section-label">03 — guide</div>
+            <h2 className="section-title">Modules & createApp</h2>
+            <p className="docs-desc">
+              <code>@Module</code> groups controllers and providers — imports are traversed recursively
+              and deduplicated, and providers resolve eagerly so missing DI tokens fail at boot.
+              <code>createApp</code> goes further: one call wires health probes, Prometheus metrics,
+              OpenAPI + Scalar docs, CORS, route printing, and graceful shutdown.
+            </p>
+            <CodeBlock filename="src/app.module.ts">{MODULE}</CodeBlock>
+            <CodeBlock filename="src/index.ts">{CREATE_APP}</CodeBlock>
+          </section>
 
-        <section id="client">
-          <div className="section-label">06</div>
-          <h2 className="section-title">Typed fetch client</h2>
-          <p className="section-desc">Generate an AppRoutes interface from your controllers, then call endpoints with full TypeScript inference.</p>
-          <CodeBlock filename="src/client.ts">{CLIENT}</CodeBlock>
-        </section>
+          <section id="configure" className="docs-group">
+            <div className="section-label">04 — guide</div>
+            <h2 className="section-title">HonoRouteBuilder.configure</h2>
+            <p className="docs-desc">
+              One global configuration point for cross-cutting behaviour — guards, rate limiting, cache
+              backends, logging, error format, and platform upgraders. Call once at startup before
+              building routes.
+            </p>
+            <CodeBlock filename="src/bootstrap.ts">{CONFIGURE}</CodeBlock>
+          </section>
 
-        <section id="test">
-          <div className="section-label">07</div>
-          <h2 className="section-title">Testing</h2>
-          <p className="section-desc">Use createTestingModule to build an isolated app for Bun tests.</p>
-          <CodeBlock filename="src/todo.test.ts">{TEST}</CodeBlock>
-        </section>
-      </main>
+          {DOC_GROUPS.map((g, i) => (
+            <section key={g.id} id={g.id} className="docs-group">
+              <div className="section-label">
+                {String(i + GUIDES.length + 1).padStart(2, '0')} — reference
+              </div>
+              <h2 className="section-title">{g.label}</h2>
+              <p className="docs-desc">{g.desc}</p>
+
+              <div className="docs-entries">
+                {g.items.map((item) => (
+                  <article key={item.name} id={itemId(g.id, item.name)} className="doc-entry">
+                    <h3 className="doc-name">
+                      <a href={`#${itemId(g.id, item.name)}`} className="doc-anchor">
+                        {item.name}
+                      </a>
+                    </h3>
+                    <p className="doc-desc">{item.desc}</p>
+                    {item.example && <CodeBlock filename="example.ts">{item.example}</CodeBlock>}
+                  </article>
+                ))}
+              </div>
+            </section>
+          ))}
+        </main>
+      </div>
       <Footer />
     </>
-  );
+  )
 }
