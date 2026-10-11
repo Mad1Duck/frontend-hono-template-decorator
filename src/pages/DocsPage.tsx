@@ -105,11 +105,51 @@ const CONFIGURE = `HonoRouteBuilder.configure({
   trailingSlash,      // 'ignore' (default) | 'strip' | 'add'
 })`;
 
+const CLI_USAGE = `bunx hono-forge <command> <entry-file> [options]
+
+# the entry file must export an @Module or @Controller class
+bunx hono-forge routes ./src/app.module.ts
+
+# TypeScript entries need Bun (bunx). For Node, point at
+# compiled JS instead:
+node node_modules/hono-forge/dist/cli.js routes ./dist/app.module.js
+
+# several exports in one file? pick one:
+bunx hono-forge routes ./src/index.ts --export AppModule
+
+# per-command flags + examples:
+bunx hono-forge help doctor
+bunx hono-forge doctor --help`;
+
+const CLI_WORKFLOW = `# during development — inspect without booting the server
+bunx hono-forge routes ./src/app.module.ts          # route table
+bunx hono-forge graph  ./src/app.module.ts          # DI graph
+bunx hono-forge graph  ./src/app.module.ts --format mermaid
+
+# in CI — fails the pipeline on wiring issues
+bunx hono-forge doctor ./src/app.module.ts --json
+
+# codegen — commit or .gitignore the outputs, your call
+bunx hono-forge openapi ./src/app.module.ts --out openapi.json
+bunx hono-forge flows   ./src/app.module.ts --out ./flows
+bunx hono-forge client  ./src/app.module.ts --out src/routes.gen.ts`;
+
+const CLI_SCRIPTS = `{
+  "scripts": {
+    "routes": "hono-forge routes ./src/app.module.ts",
+    "doctor": "hono-forge doctor ./src/app.module.ts",
+    "gen:openapi": "hono-forge openapi ./src/app.module.ts --out openapi.json",
+    "gen:client": "hono-forge client ./src/app.module.ts --out src/routes.gen.ts"
+  }
+}
+// then: bun run doctor — same flags work, e.g. bun run routes --json`;
+
 const GUIDES = [
 	{ id: "install", label: "Install & scaffold" },
 	{ id: "quickstart", label: "Quick start" },
 	{ id: "modules-app", label: "Modules & createApp" },
 	{ id: "configure", label: "HonoRouteBuilder.configure" },
+	{ id: "cli-usage", label: "Using the CLI" },
 ];
 
 const itemId = (groupId: string, name: string) => `${groupId}-${slugify(name)}`;
@@ -258,6 +298,34 @@ export default function DocsPage() {
 							platform upgraders. Call once at startup before building routes.
 						</p>
 						<CodeBlock filename="src/bootstrap.ts">{CONFIGURE}</CodeBlock>
+					</section>
+
+					<section id="cli-usage" className="docs-group">
+						<div className="section-label">05 — guide</div>
+						<h2 className="section-title">Using the CLI</h2>
+						<p className="docs-desc">
+							The CLI reads your decorators <em>without starting the server</em>{" "}
+							— every command takes an entry file that exports an{" "}
+							<code>@Module</code> (or <code>@Controller</code>) class. Run it
+							via <code>bunx</code> so TypeScript files work directly; Node
+							requires a compiled JS entry instead.
+						</p>
+						<CodeBlock filename="terminal">{CLI_USAGE}</CodeBlock>
+						<p className="docs-desc">
+							Where it fits in your workflow — inspection while you develop, a
+							gate in CI, and codegen for specs, test flows, and typed clients.
+							Each command's flags are listed in the{" "}
+							<a href="#cli" className="docs-inline-link">
+								cli commands reference
+							</a>{" "}
+							below.
+						</p>
+						<CodeBlock filename="terminal">{CLI_WORKFLOW}</CodeBlock>
+						<p className="docs-desc">
+							Tip: wire the commands you run often into{" "}
+							<code>package.json</code> scripts.
+						</p>
+						<CodeBlock filename="package.json">{CLI_SCRIPTS}</CodeBlock>
 					</section>
 
 					{DOC_GROUPS.map((g, i) => (

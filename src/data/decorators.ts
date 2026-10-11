@@ -211,6 +211,11 @@ export const DOC_GROUPS: DocGroup[] = [
 				desc: "Introspects the dependency graph without resolving — scope, deps, registration kind, missing deps. printGraph renders a human-readable table.",
 				example: `container.describe([\n  ...HonoRouteBuilder.moduleProviders(AppModule),\n  ...HonoRouteBuilder.moduleControllers(AppModule),\n]);\n\ncontainer.printGraph([...]);\n//   TodoService   [singleton] → TodoRepo\n//   ⚠ missing: 'Mailer' is not in providers`,
 			},
+			{
+				name: "metadata introspection",
+				desc: "Read decorator metadata for plugin/tooling authors — getClassMetadata(class, key) and getMethodMetadata(target, method, key) read values stored under METADATA_KEYS.* symbols; hasDecorator(target, method, key) is a boolean check. Lower-level getClassMeta/getMethodMeta read from a class's Symbol.metadata record directly.",
+				example: `import {\n  getClassMetadata,\n  getMethodMetadata,\n  hasDecorator,\n  METADATA_KEYS,\n} from 'hono-forge';\n\nconst guards = getMethodMetadata<GuardMetadata[]>(\n  instance, 'findAll', METADATA_KEYS.GUARDS,\n);\nconst isController =\n  getClassMetadata(ctrl, METADATA_KEYS.CONTROLLER) !== undefined;\nconst cached = hasDecorator(instance, 'getUser', METADATA_KEYS.CACHE);`,
+			},
 		],
 	},
 	{
@@ -325,8 +330,13 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "getRequestContext()",
-				desc: "Returns the full request scope context ({ traceId, memoCache, diScope, hono }) — the lower-level API behind getContext().",
-				example: `const ctx = getRequestContext();\nif (ctx) {\n  ctx.memoCache.set('flags', flags); // request-scoped cache\n}`,
+				desc: "Returns the full request scope context ({ traceId, hono, memoCache, diScope }) — the lower-level API behind getContext(). runInRequestContext(ctx, fn) runs code inside a context; createRequestContext(traceId, hono?) builds one — HonoRouteBuilder calls these once per request, so you only need them when invoking handlers outside the route builder.",
+				example: `const ctx = getRequestContext();\nif (ctx) {\n  ctx.memoCache.set('flags', flags); // request-scoped cache\n}\n\n// run a handler outside the route builder (e.g. WS callback):\nrunInRequestContext(\n  createRequestContext(getTraceId() ?? crypto.randomUUID(), c),\n  () => handler(c),\n);`,
+			},
+			{
+				name: "extractIp / detectDevice / extractUserAgent / extractRequestContext",
+				desc: "The raw extractor utilities behind Ip/Device/UserAgent — usable outside handlers (middleware, loggers). extractIp honors CF-Connecting-IP → X-Real-IP → X-Forwarded-For; detectDevice classifies a UA string into 'mobile' | 'tablet' | 'desktop' | 'bot'; extractRequestContext(c) returns all three in one call ({ ip, device, userAgent }).",
+				example: `const log = requestLogger((entry) => sink.write(entry));\n\n// inside custom middleware:\nconst { ip, device, userAgent } = extractRequestContext(c);\n// or individually:\nconst ip  = extractIp(c);\nconst dev = detectDevice(c.req.header('user-agent') ?? '');`,
 			},
 		],
 	},
@@ -478,12 +488,12 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "cacheAdapter config",
-				desc: "Swap the in-memory cache for Redis or another shared backend — implement CacheAdapter (get / set / delete / deletePattern).",
+				desc: "Swap the in-memory cache (InMemoryCacheAdapter, also exposed as defaultCacheAdapter) for Redis or another shared backend — implement CacheAdapter (get / set / delete / deletePattern).",
 				example: `HonoRouteBuilder.configure({\n  cacheAdapter: new MyRedisCacheAdapter(redis),\n});`,
 			},
 			{
 				name: "@Memoize(opts?)",
-				desc: "Caches the return value in memory keyed by serialized arguments. scope: 'global' (default, shared across requests) or 'request' (isolated per request). Optional ttl.",
+				desc: "Caches the return value in memory keyed by serialized arguments. scope: 'global' (default, shared across requests) or 'request' (isolated per request, via the request context). Optional ttl. Calling a request-scoped @Memoize method outside a request falls back to the global cache — wrap the call in runWithMemoScope(fn) to give it a scope.",
 				example: `// Global cache — same result for all requests\n@Memoize({ ttl: 60_000 })\nasync getFeatureFlags() {\n  return this.db.getFlags();\n}\n\n// Request-scoped — isolated per request\n@Memoize({ scope: 'request' })\nasync getCurrentUser(id: string) {\n  return this.db.findUser(id);\n}`,
 			},
 			{
@@ -515,7 +525,7 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "redisRateLimiter(client)",
-				desc: "Distributed @RateLimit via Redis (INCR + PEXPIRE fixed window) — the in-memory limiter is per-process, so multi-instance deploys need this. Client is injected (ioredis-compatible).",
+				desc: "Distributed @RateLimit via Redis (INCR + PEXPIRE fixed window) — inMemoryRateLimiter is the default factory and is per-process, so multi-instance deploys need this. Client is injected (ioredis-compatible, or anything exposing incr/pexpire/pttl). Factories receive RateLimiterFactoryOptions: { max, windowMs, keyPrefix, keyGenerator?, message? }.",
 				example: `import Redis from 'ioredis';\nimport { redisRateLimiter } from 'hono-forge';\n\nHonoRouteBuilder.configure({\n  rateLimiterFactory: redisRateLimiter(new Redis()),\n});\n\n// or roll your own factory:\nrateLimiterFactory: ({ max, windowMs, keyPrefix }) => middleware`,
 			},
 			{
@@ -582,7 +592,7 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "errorFormat: 'problem'",
-				desc: "Opt-in RFC 9457 application/problem+json error shape instead of the default envelope. Validation failures become a 400 problem with Zod issues under errors; headers set before the throw (e.g. Retry-After) are preserved.",
+				desc: "Opt-in RFC 9457 application/problem+json error shape instead of the default envelope. Validation failures become a 400 problem with Zod issues under errors; headers set before the throw (e.g. Retry-After) are preserved. problemResponse(c, err, exposeStack) renders the same shape — reuse it inside a custom onError; returns null for non-HttpException/non-Zod errors.",
 				example: `HonoRouteBuilder.configure({ errorFormat: 'problem' });\n\n// → 404 application/problem+json\n{\n  "type": "about:blank",\n  "title": "Not Found",\n  "status": 404,\n  "detail": "User 42 not found",\n  "instance": "/users/42",\n  "code": "USER_NOT_FOUND"\n}`,
 			},
 			{
@@ -703,7 +713,7 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "registerLogger(logger) / LOGGER",
-				desc: "Binds a pino/winston-compatible logger ({ info(data, msg?) }) to the LOGGER DI token — used by @Audit, the scheduler, and the event bus. Injectable anywhere.",
+				desc: "Binds a pino/winston-compatible logger ({ info(data, msg?) }) to the LOGGER DI token — used by @Audit, the scheduler, and the event bus. Injectable anywhere. getLogger() resolves the registered logger with a ConsoleLogger fallback when nothing is bound.",
 				example: `import { registerLogger, LOGGER } from 'hono-forge';\n\nregisterLogger(pinoInstance);\n\n@Injectable([LOGGER])\nclass AuditService {\n  constructor(private log: Logger) {}\n}`,
 			},
 			{
@@ -726,7 +736,7 @@ export const DOC_GROUPS: DocGroup[] = [
 	{
 		id: "openapi",
 		label: "openapi documentation",
-		desc: "Auto-generate an OpenAPI 3.1 spec from your decorators and serve Scalar docs — auth, validation, and path params are reflected automatically.",
+		desc: "Auto-generate an OpenAPI 3.1 spec from your decorators and serve Scalar docs — auth, validation, and path params are reflected automatically. Schemas are converted with the bundled zodToJsonSchema — also exported if you need a standalone Zod → JSON Schema pass.",
 		items: [
 			{
 				name: "OpenAPIGenerator.generate()",
@@ -787,7 +797,7 @@ export const DOC_GROUPS: DocGroup[] = [
 		items: [
 			{
 				name: "paginate(data, total, opts)",
-				desc: "Wraps a data array and total count into a standard { data, meta } response — meta carries page, limit, total, totalPages, hasNext, hasPrev.",
+				desc: "Wraps a data array and total count into a standard { data, meta } response — meta carries page, limit, total, totalPages, hasNext, hasPrev. Return type is PaginatedResult<T> ({ data: T[]; meta: PaginationMeta }) — PaginationMeta is the exported meta type.",
 				example: `const [data, total] = await repo.findAndCount({ limit, offset });\nreturn paginate(data, total, { page, limit });\n// { data: [...], meta: { page: 1, limit: 20, total: 95, totalPages: 5, ... } }`,
 			},
 			{
@@ -805,7 +815,7 @@ export const DOC_GROUPS: DocGroup[] = [
 	{
 		id: "ops",
 		label: "ops, testing & tooling",
-		desc: "Health checks, graceful shutdown, test isolation, typed clients, api-tester flows, and the CLI — everything needed to ship and verify.",
+		desc: "Health checks, graceful shutdown, test isolation, typed clients, and api-tester flows — everything needed to ship and verify.",
 		items: [
 			{
 				name: "mountHealth(app, opts?)",
@@ -819,7 +829,7 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "mountDrain(app)",
-				desc: "Installs in-flight request tracking so gracefulShutdown can wait for running requests instead of cutting them off. Mount BEFORE building routes. createApp mounts it automatically when shutdown is enabled.",
+				desc: "Installs in-flight request tracking so gracefulShutdown can wait for running requests instead of cutting them off. Mount BEFORE building routes. createApp mounts it automatically when shutdown is enabled. getRequestDrain() returns the RequestDrain ({ active, isDraining, drain() }) for custom probes.",
 				example: `const app = new Hono();\nmountDrain(app); // before routes!\nnew HonoRouteBuilder(app)\n  .buildControllers(controllers);\ngracefulShutdown();`,
 			},
 			{
@@ -839,18 +849,55 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "writeFlowFiles(dir, module, opts?)",
-				desc: "Emits api-tester .flow.yaml files — one per controller, CRUD-chained (POST extracts id → {{id}} downstream), @Validate schemas become sample bodies, guards add Bearer placeholders. Deterministic ids → re-imports upsert.",
+				desc: "Emits api-tester .flow.yaml files — one per controller, CRUD-chained (POST extracts id → {{id}} downstream), @Validate schemas become sample bodies, guards add Bearer placeholders. Deterministic ids → re-imports upsert. In-memory variants for your own writer: generateFlowFiles/generateFlowFile (returns [{filename, flow}]) and stringifyFlowFile (returns the YAML string).",
 				example: `await writeFlowFiles('./flows', AppModule, {\n  baseUrl: 'http://localhost:3000',\n});\n// flows/todos.flow.yaml, flows/users.flow.yaml\n\n// single-file variant — groups per controller:\nawait writeFlowFile('./flows', AppModule);`,
 			},
+		],
+	},
+	{
+		id: "cli",
+		label: "cli commands",
+		desc: "The hono-forge CLI introspects your @Module/@Controller entry file — no server needed. TypeScript entries require Bun; Node needs a pre-built JS entry. --export <name> picks a specific export when the file exports several modules, and every command supports --help (or hono-forge help <command>).",
+		items: [
 			{
-				name: "hono-forge CLI",
-				desc: "init / flows / openapi / routes / graph / doctor / client — codegen and static checks without a script. TypeScript entries need Bun; --export picks a named export.",
-				example: `bunx hono-forge init my-api\nbunx hono-forge flows ./src/app.module.ts --out ./flows\nbunx hono-forge openapi ./src/app.module.ts --out openapi.json\nbunx hono-forge routes ./src/app.module.ts        # route table\nbunx hono-forge graph ./src/app.module.ts         # DI graph\nbunx hono-forge graph ./src/app.module.ts --format mermaid\nbunx hono-forge doctor ./src/app.module.ts        # CI wiring check — exit 1 on issues\nbunx hono-forge client ./src/app.module.ts --out src/routes.gen.ts`,
+				name: "hono-forge init <name>",
+				desc: "Scaffolds a runnable starter project — app.module.ts, an example controller/service, src/index.ts wiring health + OpenAPI docs + graceful shutdown, package.json, tsconfig.json (TC39 decorators configured), README.md, and .gitignore.",
+				example: `bunx hono-forge init my-api\ncd my-api\nbun install\nbun run dev\n\n# serves /hello, /health, /openapi.json\n# and interactive docs at /docs`,
 			},
 			{
-				name: "hono-forge doctor",
-				desc: "Static wiring validator over route metadata — checks missing DI deps, route collisions across controllers, invalid @Cron expressions, and scheduled jobs on @RequestScoped classes. Exits non-zero; --json for CI/IDE.",
-				example: `bunx hono-forge doctor ./src/app.module.ts\n# ✖ doctor found 2 issue(s):\n#   • di: 'UserService' depends on 'Mailer' — not in providers\n#   • route: GET /users bound by both UserController.list and AdminController.list`,
+				name: "hono-forge flows <entry>",
+				desc: "Generates api-tester .flow.yaml files — one per controller, CRUD-chained. Options: --out <dir> (default ./flows), --base-url <url> (default http://localhost:3000), --single (one file with a visual group per controller), --export <name>.",
+				example: `bunx hono-forge flows ./src/app.module.ts --out ./flows\nbunx hono-forge flows ./src/app.module.ts --single \\\n  --base-url http://localhost:3000\n\n# then in api-tester: Import flow → pick a .flow.yaml → Run`,
+			},
+			{
+				name: "hono-forge openapi <entry>",
+				desc: "Writes the OpenAPI 3.1 spec to a JSON file without booting the server. Options: --out <file> (default ./openapi.json), --title <text> (default: entry file name), --version <ver> (default 1.0.0), --export <name>.",
+				example: `bunx hono-forge openapi ./src/app.module.ts --out openapi.json\nbunx hono-forge openapi ./src/app.module.ts \\\n  --title "Todo API" --version 2.1.0\n\n# feed the file to Swagger UI, api-tester "Import from API",\n# or codegen`,
+			},
+			{
+				name: "hono-forge routes <entry>",
+				desc: "Prints the route table — method / path / handler / guards / middleware / flags. Options: --json (machine-readable output), --export <name>.",
+				example: `bunx hono-forge routes ./src/app.module.ts\nbunx hono-forge routes ./src/app.module.ts --json`,
+			},
+			{
+				name: "hono-forge graph <entry>",
+				desc: "Prints the DI dependency graph — provider scopes, constructor deps, and missing-dep warnings. Options: --format text|mermaid (mermaid is embeddable in docs/PRs), --export <name>.",
+				example: `bunx hono-forge graph ./src/app.module.ts\nbunx hono-forge graph ./src/app.module.ts --format mermaid`,
+			},
+			{
+				name: "hono-forge doctor <entry>",
+				desc: "Static wiring check — exits 1 on issues so it works as a CI guard. Checks: missing DI deps, route collisions across controllers, invalid @Cron expressions, scheduled jobs on @RequestScoped classes, and @OnBootstrap on @RequestScoped classes. Options: --json (issue list for CI/IDE), --export <name>.",
+				example: `bunx hono-forge doctor ./src/app.module.ts\nbunx hono-forge doctor ./src/app.module.ts --json\n\n# ✖ doctor found 2 issue(s):\n#   • di: 'UserService' depends on 'Mailer' — not in providers\n#   • route: GET /users bound by both UserController.list\n#     and AdminController.list`,
+			},
+			{
+				name: "hono-forge client <entry>",
+				desc: "Writes a typed client route map — the generated file declares interface AppRoutes for createClient<AppRoutes>(baseUrl). Options: --out <file> (default ./routes.gen.ts), --name <ident> (interface name), --import-path <p> (module specifier the file imports controller types from — controllers must be exported there), --export <name>. Re-run as a codegen step whenever routes change.",
+				example: `bunx hono-forge client ./src/app.module.ts --out src/routes.gen.ts\n\n# then:\nimport { createClient } from 'hono-forge';\nimport type { AppRoutes } from './routes.gen';\n\nconst api = createClient<AppRoutes>('http://localhost:3000');`,
+			},
+			{
+				name: "hono-forge help <command>",
+				desc: "Shows per-command flags and examples — also available as hono-forge <command> --help. Unknown commands get a 'did you mean' suggestion.",
+				example: `hono-forge help\nhono-forge help client\nhono-forge client --help`,
 			},
 		],
 	},

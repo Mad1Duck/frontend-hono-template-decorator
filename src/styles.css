@@ -998,6 +998,18 @@ section.docs-group .section-title { font-size: clamp(1.4rem, 2.2vw, 1.9rem); }
   border-radius: 3px;
   padding: 0.05em 0.35em;
 }
+
+.docs-inline-link {
+  color: var(--accent2);
+  text-decoration: underline;
+  text-decoration-color: rgba(255,107,53,0.35);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s, color 0.15s;
+}
+.docs-inline-link:hover {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
+}
 /* keep pre blocks unaffected */
 .docs-content pre code {
   background: none;
