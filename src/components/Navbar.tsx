@@ -1,10 +1,9 @@
 const NAV_LINKS = [
-	{ label: "Features", href: "#features" },
-	{ label: "Decorators", href: "#decorators" },
-	{ label: "Usage", href: "#usage" },
-	{ label: "Architecture", href: "#architecture" },
-	{ label: "Changelog", href: "#changelog" },
-	{ label: "Feedback", href: "#feedback" },
+	{ label: "Features", href: "/#features" },
+	{ label: "Docs", href: "/docs" },
+	{ label: "Tutorial", href: "/tutorial" },
+	{ label: "Changelog", href: "/changelog" },
+	{ label: "GitHub", href: "https://github.com/Mad1Duck/hono-decorator", external: true },
 ];
 
 export default function Navbar() {
@@ -17,7 +16,13 @@ export default function Navbar() {
 			<ul className="nav-links">
 				{NAV_LINKS.map((l) => (
 					<li key={l.href}>
-						<a href={l.href}>{l.label}</a>
+						<a
+							href={l.href}
+							target={l.external ? "_blank" : undefined}
+							rel={l.external ? "noopener noreferrer" : undefined}
+						>
+							{l.label}
+						</a>
 					</li>
 				))}
 				<li>
@@ -28,16 +33,6 @@ export default function Navbar() {
 						className="nav-npm"
 					>
 						npm ↗
-					</a>
-				</li>
-				<li>
-					<a
-						href="https://github.com/Mad1Duck/hono-decorator"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="nav-github"
-					>
-						GitHub ↗
 					</a>
 				</li>
 			</ul>
