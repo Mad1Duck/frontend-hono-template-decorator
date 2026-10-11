@@ -869,7 +869,7 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "writeFlowFiles(dir, module, opts?)",
-				desc: "Emits api-tester .flow.yaml files — one per controller, CRUD-chained (POST extracts id → {{id}} downstream), @Validate/@ApiBody schemas become sample bodies (schema-less mutations still get a visible raw-body field), guards add Bearer placeholders, and @Serialize/@ValidateResult contracts seed exists assertions (forStatus-scoped to the success status). Deterministic ids → re-imports upsert. In-memory variants for your own writer: generateFlowFiles/generateFlowFile (returns [{filename, flow}]) and stringifyFlowFile (returns the YAML string).",
+				desc: "Emits api-tester .flow.yaml files — one per controller, CRUD-chained (POST extracts id → {{id}} downstream). @Validate/@ApiBody schemas become sample bodies (z.file() fields → form-data multipart rows; schema-less mutations get a visible empty raw body); @Validate({query})/@ApiQuery become query params; @Validate({params}) seeds the editable {{param}} variables; guards add Bearer placeholders; @Status/@ApiResponse(2xx) drive status assertions and @Serialize/@ApiResponse schemas seed exists assertions on required response fields. Deterministic ids → re-imports upsert. In-memory variants for your own writer: generateFlowFiles/generateFlowFile (returns [{filename, flow}]) and stringifyFlowFile (returns the YAML string).",
 				example: `await writeFlowFiles('./flows', AppModule, {\n  baseUrl: 'http://localhost:3000',\n});\n// flows/todos.flow.yaml, flows/users.flow.yaml\n\n// single-file variant — groups per controller:\nawait writeFlowFile('./flows', AppModule);`,
 			},
 			{
