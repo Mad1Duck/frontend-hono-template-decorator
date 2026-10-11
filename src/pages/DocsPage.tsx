@@ -1,3 +1,5 @@
+import { ChevronRight } from "lucide-react";
+import { useState } from "react";
 import { DOC_GROUPS, slugify } from "#/data/decorators";
 import CodeBlock from "@/components/CodeBlock";
 import Footer from "@/components/Footer";
@@ -113,6 +115,17 @@ const GUIDES = [
 const itemId = (groupId: string, name: string) => `${groupId}-${slugify(name)}`;
 
 export default function DocsPage() {
+	const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+	const expand = (id: string) => setExpanded((prev) => new Set(prev).add(id));
+	const toggle = (id: string) =>
+		setExpanded((prev) => {
+			const next = new Set(prev);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			return next;
+		});
+
 	return (
 		<>
 			<Navbar />
@@ -130,21 +143,41 @@ export default function DocsPage() {
 					))}
 					<div className="docs-toc-title">decorator & api reference</div>
 					{DOC_GROUPS.map((g) => (
-						<div key={g.id} className="docs-toc-group-block">
-							<a href={`#${g.id}`} className="docs-toc-link docs-toc-group">
-								{g.label}
-							</a>
-							<div className="docs-toc-items">
-								{g.items.map((item) => (
-									<a
-										key={item.name}
-										href={`#${itemId(g.id, item.name)}`}
-										className="docs-toc-link docs-toc-item"
-									>
-										{item.name}
-									</a>
-								))}
+						<div
+							key={g.id}
+							className={`docs-toc-group-block${expanded.has(g.id) ? " open" : ""}`}
+						>
+							<div className="docs-toc-group-row">
+								<a
+									href={`#${g.id}`}
+									className="docs-toc-link docs-toc-group"
+									onClick={() => expand(g.id)}
+								>
+									{g.label}
+									<span className="docs-toc-count">{g.items.length}</span>
+								</a>
+								<button
+									type="button"
+									className="docs-toc-toggle"
+									onClick={() => toggle(g.id)}
+									aria-label={`toggle ${g.label}`}
+								>
+									<ChevronRight size={12} className="docs-chev" />
+								</button>
 							</div>
+							{expanded.has(g.id) && (
+								<div className="docs-toc-items">
+									{g.items.map((item) => (
+										<a
+											key={item.name}
+											href={`#${itemId(g.id, item.name)}`}
+											className="docs-toc-link docs-toc-item"
+										>
+											{item.name}
+										</a>
+									))}
+								</div>
+							)}
 						</div>
 					))}
 				</aside>
@@ -196,8 +229,7 @@ export default function DocsPage() {
 							constructor. Handlers receive the Hono <code>Context</code>{" "}
 							directly — route params, query, body and headers are read via
 							typed context helpers. A plain return value is auto-serialized to
-							JSON; a returned
-							<code>Response</code> passes through untouched.
+							JSON; a returned <code>Response</code> passes through untouched.
 						</p>
 						<CodeBlock filename="src/index.ts">{QUICKSTART}</CodeBlock>
 					</section>
@@ -208,10 +240,10 @@ export default function DocsPage() {
 						<p className="docs-desc">
 							<code>@Module</code> groups controllers and providers — imports
 							are traversed recursively and deduplicated, and providers resolve
-							eagerly so missing DI tokens fail at boot.
-							<code>createApp</code> goes further: one call wires health probes,
-							Prometheus metrics, OpenAPI + Scalar docs, CORS, route printing,
-							and graceful shutdown.
+							eagerly so missing DI tokens fail at boot. <code>createApp</code>{" "}
+							goes further: one call wires health probes, Prometheus metrics,
+							OpenAPI + Scalar docs, CORS, route printing, and graceful
+							shutdown.
 						</p>
 						<CodeBlock filename="src/app.module.ts">{MODULE}</CodeBlock>
 						<CodeBlock filename="src/index.ts">{CREATE_APP}</CodeBlock>

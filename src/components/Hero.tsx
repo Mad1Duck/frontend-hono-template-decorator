@@ -16,7 +16,7 @@ const INSTALL_CMD = 'bun add hono-forge hono zod'
 
 export default function Hero() {
   const [copied, setCopied] = useState(false)
-  const [version, setVersion] = useState('5.0.0') // fallback
+  const [version, setVersion] = useState('5.5.0') // fallback
 
   useEffect(() => {
     fetch('https://registry.npmjs.org/hono-forge')
