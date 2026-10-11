@@ -488,7 +488,7 @@ export const DOC_GROUPS: DocGroup[] = [
 		items: [
 			{
 				name: "@Cache(opts)",
-				desc: "Caches the handler return value in the configured CacheAdapter — in-memory by default, swappable for Redis. Keyed by key (default: method name) + request path + query. ttl (ms) required; cached hits skip the handler entirely.",
+				desc: "Caches the handler return value in the configured CacheAdapter — in-memory by default, swappable for Redis/Postgres. Keyed by key (default: method name) + request path + query. ttl (ms) required; adapter picks a named cacheAdapters entry. Cached hits skip the handler entirely.",
 				example: `@Get('/config')\n@Cache({ ttl: 60_000, key: 'app-config' })\nasync getConfig() {\n  return this.repo.getConfig(); // runs once per ttl\n}`,
 			},
 			{
@@ -498,8 +498,8 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "cacheAdapter config",
-				desc: "Swap the in-memory cache (InMemoryCacheAdapter, also exposed as defaultCacheAdapter) for Redis or another shared backend — implement CacheAdapter (get / set / delete / deletePattern).",
-				example: `HonoRouteBuilder.configure({\n  cacheAdapter: new MyRedisCacheAdapter(redis),\n});`,
+				desc: "Swap the in-memory cache (InMemoryCacheAdapter, also exposed as defaultCacheAdapter) for a durable backend — ship RedisCacheAdapter (ioredis-shaped client) or PostgresCacheAdapter (driver-free sql fn + one table, strongest for @Idempotent). Named cacheAdapters enable per-decorator picks: @Cache({ adapter: 'redis' }) vs @Idempotent({ adapter: 'pg' }).",
+				example: `HonoRouteBuilder.configure({\n  cacheAdapter: new RedisCacheAdapter(redis),\n  cacheAdapters: {\n    redis: new RedisCacheAdapter(redis),\n    pg: new PostgresCacheAdapter(\n      (sql, params) => pool.query(sql, params),\n    ),\n  },\n});\n// @Cache({ adapter: 'redis' })   @Idempotent({ adapter: 'pg' })`,
 			},
 			{
 				name: "@Memoize(opts?)",
@@ -550,7 +550,7 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "@Idempotent(opts?)",
-				desc: "Replays the stored response when a client retries with the same Idempotency-Key header — including concurrent duplicates (handler runs once). Same key + different request body → 409 Conflict (Stripe-style body-hash check, on by default — hash: false to opt out). scope namespaces keys per tenant/user. Only successful responses are stored; ttl defaults to 24h. Uses the configured CacheAdapter — the default in-memory store does NOT survive restarts; inject a durable adapter in production.",
+				desc: "Replays the stored response when a client retries with the same Idempotency-Key header — including concurrent duplicates (handler runs once). Same key + different request body → 409 Conflict (Stripe-style body-hash check, on by default — hash: false to opt out). scope namespaces keys per tenant/user. Only successful responses are stored; ttl defaults to 24h. Uses the configured CacheAdapter — default in-memory does NOT survive restarts; use adapter: 'name' with a named cacheAdapters entry (e.g. PostgresCacheAdapter) in production.",
 				example: `@Post('/orders')\n@Idempotent({\n  scope: (c) => User(c)?.tenantId ?? 'anon', // per-tenant namespace\n  ttl: 60_000,\n})\nasync createOrder(c: Context) {\n  // client sends: Idempotency-Key: order-req-123\n  // retry same key + same body → same response, no double charge\n  // retry same key + different body → 409 Conflict\n  return this.svc.charge(await Body(c, OrderSchema));\n}`,
 			},
 			{
@@ -896,8 +896,8 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "hono-forge flows <entry>",
-				desc: "Generates api-tester .flow.yaml files — one per controller, CRUD-chained. @Serialize/@ValidateResult contracts seed exists assertions for required top-level fields ($[0].* for arrays), scoped with forStatus to the success status so they don't fail on error responses. Options: --out <dir> (default ./flows), --base-url <url> (default http://localhost:3000), --single (one file with a visual group per controller), --export <name>.",
-				example: `bunx hono-forge flows ./src/app.module.ts --out ./flows\nbunx hono-forge flows ./src/app.module.ts --single \\\n  --base-url http://localhost:3000\n\n# then in api-tester: Import flow → pick a .flow.yaml → Run`,
+				desc: "Generates api-tester .flow.yaml files — one per controller, CRUD-chained. @Serialize/@ValidateResult contracts seed exists assertions for required top-level fields ($[0].* for arrays), scoped with forStatus to the success status so they don't fail on error responses. Options: --out <dir> (default ./flows), --base-url <url> (default http://localhost:3000), --single (one file with a visual group per controller), --auth '<METHOD> <path>' + --auth-body/--auth-extract (prepend a login step so guarded flows actually run — {{vars}} in the body become editable variables), --export <name>.",
+				example: `bunx hono-forge flows ./src/app.module.ts --out ./flows\nbunx hono-forge flows ./src/app.module.ts --single \\\n  --base-url http://localhost:3000\n\n# authenticated APIs — login step produces {{token}}:\nbunx hono-forge flows ./src/app.module.ts \\\n  --auth 'POST /v1/auth/login' \\\n  --auth-body '{"username":"{{user}}","password":"{{pass}}"}' \\\n  --auth-extract 'token=data.accessToken'\n\n# then in api-tester: Import flow → pick a .flow.yaml → Run`,
 			},
 			{
 				name: "hono-forge openapi <entry>",
