@@ -849,8 +849,13 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "writeFlowFiles(dir, module, opts?)",
-				desc: "Emits api-tester .flow.yaml files — one per controller, CRUD-chained (POST extracts id → {{id}} downstream), @Validate schemas become sample bodies, guards add Bearer placeholders. Deterministic ids → re-imports upsert. In-memory variants for your own writer: generateFlowFiles/generateFlowFile (returns [{filename, flow}]) and stringifyFlowFile (returns the YAML string).",
+				desc: "Emits api-tester .flow.yaml files — one per controller, CRUD-chained (POST extracts id → {{id}} downstream), @Validate schemas become sample bodies, guards add Bearer placeholders, and @Serialize/@ValidateResult contracts seed exists assertions (forStatus-scoped to the success status). Deterministic ids → re-imports upsert. In-memory variants for your own writer: generateFlowFiles/generateFlowFile (returns [{filename, flow}]) and stringifyFlowFile (returns the YAML string).",
 				example: `await writeFlowFiles('./flows', AppModule, {\n  baseUrl: 'http://localhost:3000',\n});\n// flows/todos.flow.yaml, flows/users.flow.yaml\n\n// single-file variant — groups per controller:\nawait writeFlowFile('./flows', AppModule);`,
+			},
+			{
+				name: "db schema introspection",
+				desc: "Programmatic API behind hono-forge schema — extractDbSchema(mod) reflects a module's exported Drizzle tables into a DbSchemaFile, introspectPostgresSchema(connStr, { schema? }) reads a live database via information_schema (needs 'pg' in the project), parsePrismaSchema(text) parses schema.prisma, and normalizeDbSchemaDoc(doc) canonicalizes hand-written/external docs. Write with writeDbSchema(file, schema) or serialize via stringifyDbSchema.",
+				example: `import {\n  extractDbSchema, writeDbSchema,\n  introspectPostgresSchema, parsePrismaSchema,\n} from 'hono-forge';\n\nconst mod = await import('./src/db/schema.ts');\nconst schema = extractDbSchema(mod, { entryFile });\nawait writeDbSchema('./db.schema.yaml', schema);\n\n// or live:\nconst live = await introspectPostgresSchema(\n  'postgres://user:pass@localhost:5432/db',\n);`,
 			},
 		],
 	},
@@ -865,8 +870,13 @@ export const DOC_GROUPS: DocGroup[] = [
 				example: `bunx hono-forge init my-api\ncd my-api\nbun install\nbun run dev\n\n# serves /hello, /health, /openapi.json\n# and interactive docs at /docs`,
 			},
 			{
+				name: "hono-forge schema <entry|conn-string>",
+				desc: "Reflects a database schema into a portable .schema.yaml — columns, vendor+portable types, notNull, PK/composite PK flags, the full FK graph, and dialect. Four sources, auto-detected or forced with --from: drizzle (.ts/.js exporting pgTable/mysqlTable/sqliteTable), prisma (schema.prisma model blocks — no prisma CLI needed), pg (postgres://… entry or --connect <url> — live information_schema introspection, any ORM, needs 'pg' installed), file (.yaml/.json — normalizes hand-written/external docs). Options: --from, --connect, --out <file> (default ./db.schema.yaml), --json. api-tester's Database view imports the output.",
+				example: `bunx hono-forge schema ./src/db/schema.ts\n# entry exports pgTable/mysqlTable/sqliteTable objects\n\nbunx hono-forge schema ./prisma/schema.prisma\n# parses model blocks — @id, @@id, @map, @relation, enums\n\nbunx hono-forge schema "postgres://user:pass@localhost:5432/db"\n# live information_schema introspection — any ORM or none\n\nbunx hono-forge schema ./db.schema.yaml --from file\n# normalize a hand-written/external doc to canonical form\n\n# then in api-tester: Database → Import .schema.yaml\n# (or "Introspect live DB" — no CLI needed)`,
+			},
+			{
 				name: "hono-forge flows <entry>",
-				desc: "Generates api-tester .flow.yaml files — one per controller, CRUD-chained. Options: --out <dir> (default ./flows), --base-url <url> (default http://localhost:3000), --single (one file with a visual group per controller), --export <name>.",
+				desc: "Generates api-tester .flow.yaml files — one per controller, CRUD-chained. @Serialize/@ValidateResult contracts seed exists assertions for required top-level fields ($[0].* for arrays), scoped with forStatus to the success status so they don't fail on error responses. Options: --out <dir> (default ./flows), --base-url <url> (default http://localhost:3000), --single (one file with a visual group per controller), --export <name>.",
 				example: `bunx hono-forge flows ./src/app.module.ts --out ./flows\nbunx hono-forge flows ./src/app.module.ts --single \\\n  --base-url http://localhost:3000\n\n# then in api-tester: Import flow → pick a .flow.yaml → Run`,
 			},
 			{

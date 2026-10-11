@@ -132,7 +132,9 @@ bunx hono-forge doctor ./src/app.module.ts --json
 # codegen — commit or .gitignore the outputs, your call
 bunx hono-forge openapi ./src/app.module.ts --out openapi.json
 bunx hono-forge flows   ./src/app.module.ts --out ./flows
-bunx hono-forge client  ./src/app.module.ts --out src/routes.gen.ts`;
+bunx hono-forge client  ./src/app.module.ts --out src/routes.gen.ts
+bunx hono-forge schema  ./src/db/schema.ts --out db.schema.yaml
+#                     ↑ also: schema.prisma | postgres://… | --from file`;
 
 const CLI_SCRIPTS = `{
   "scripts": {
