@@ -424,7 +424,7 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "@JwtAuth(opts)",
-				desc: "Turnkey JWT auth — verifies the Bearer token with hono/jwt (HS256 default; alg, cookie options available) and stores the payload for User(c). Reflected in OpenAPI as bearerAuth + 401/403 responses. Invalid/missing token → 401.",
+				desc: "Turnkey JWT auth — verifies the Bearer token with hono/jwt (HS256 default; alg, cookie options available) and stores the payload for User(c). Reflected in OpenAPI as bearerAuth + 401/403 responses, and the flow generator detects it the same way — protected routes get Authorization: Bearer {{token}} (or ?token={{token}} on generated WS nodes). Invalid/missing token → 401.",
 				example: `@Controller('/api')\nclass MeController {\n  @Get('/me')\n  @JwtAuth({ secret: process.env.JWT_SECRET! })\n  me(c: Context) {\n    return User(c); // decoded JWT payload\n  }\n}`,
 			},
 			{
@@ -639,7 +639,7 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "@ChannelAuth(authorize)",
-				desc: "Authorizes the resolved channel before the SSE/WS upgrade completes — runs as middleware, receives (c, channel), returns false → 403. Pair with token verification at upgrade (e.g. hono/jwt verify of ?token= or Authorization) for the standard authenticated-channel recipe.",
+				desc: "Authorizes the resolved channel before the SSE/WS upgrade completes — runs as middleware, receives (c, channel), returns false → 403. Pair with token verification at upgrade (e.g. hono/jwt verify of ?token= or Authorization) for the standard authenticated-channel recipe. Flow generation marks these routes too — generated WS nodes get ?token={{token}} on the connection URL.",
 				example: `import { verify } from 'hono/jwt';\n\n// 1. authenticate at upgrade — method middleware\nconst wsAuth = async (c: Context, next: Next) => {\n  const token = c.req.query('token');\n  if (!token) return c.json({ error: 'Unauthorized' }, 401);\n  c.set('user', await verify(token, JWT_SECRET));\n  await next();\n};\n\n// 2. authorize the resolved channel\n@WebSocket('/outlet/:outletId/kds/:station')\n@Middleware(wsAuth)\n@ChannelRoute((c) =>\n  \`outlet:\${Param(c, 'outletId')}:kds:\${Param(c, 'station')}\`)\n@ChannelAuth((c, channel) =>\n  User(c)?.outletIds?.includes(Param(c, 'outletId')) ?? false)\nkds(c: Context) { /* ... */ }`,
 			},
 			{
@@ -859,8 +859,8 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "generateClientTypes(opts)",
-				desc: "Emits an AppRoutes TypeScript interface from your controllers — each output is the handler's Awaited<ReturnType>. Handlers returning Response produce Response in the map — use plain-value returns for typed clients.",
-				example: `const code = generateClientTypes({\n  controllers: [UserController],\n  importPath: './controllers',\n  exportName: 'AppRoutes',\n});\nawait Bun.write('src/routes.gen.ts', code);`,
+				desc: "Emits an AppRoutes TypeScript interface from your controllers — each output is the handler's Awaited<ReturnType>. Handlers returning Response produce Response in the map — use plain-value returns for typed clients. Imports come from importPath by default; controllerSpecifiers (a Map of controller → module specifier) emits grouped per-file imports — the CLI fills this in automatically from each controller's recorded source file.",
+				example: `const code = generateClientTypes({\n  controllers: [UserController],\n  importPath: './controllers',\n  exportName: 'AppRoutes',\n  // per-file imports instead of one barrel:\n  controllerSpecifiers: new Map([\n    [UserController, './modules/users/user.controller'],\n  ]),\n});\nawait Bun.write('src/routes.gen.ts', code);`,
 			},
 			{
 				name: "createClient<AppRoutes>(baseUrl)",
@@ -869,7 +869,7 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "writeFlowFiles(dir, module, opts?)",
-				desc: "Emits api-tester .flow.yaml files — one per controller, CRUD-chained (POST extracts id → {{id}} downstream). @Validate/@ApiBody schemas become sample bodies (z.file() fields → form-data multipart rows; schema-less mutations get a visible empty raw body); @Validate({query})/@ApiQuery become query params; @Validate({params}) seeds the editable {{param}} variables; guards add Bearer placeholders; @Status/@ApiResponse(2xx) drive status assertions and @Serialize/@ApiResponse schemas seed exists assertions on required response fields. Deterministic ids → re-imports upsert. In-memory variants for your own writer: generateFlowFiles/generateFlowFile (returns [{filename, flow}]) and stringifyFlowFile (returns the YAML string).",
+				desc: "Emits api-tester .flow.yaml files — one per controller, CRUD-chained (POST extracts id → {{id}} downstream). @Validate/@ApiBody schemas become sample bodies (z.file() fields → form-data multipart rows; schema-less mutations get a visible empty raw body); @Validate({query})/@ApiQuery become query params; @Validate({params}) seeds the editable {{param}} variables; guard- or @JwtAuth-protected routes add Bearer placeholders — WebSocket nodes get ?token={{token}} on the URL instead (sockets can't carry headers; @ChannelAuth routes and declared @ApiQuery params land there too, and the wsQuery option appends anything else). @Status/@ApiResponse(2xx) drive status assertions and @Serialize/@ApiResponse schemas seed exists assertions on required response fields. Deterministic ids → re-imports upsert. In-memory variants for your own writer: generateFlowFiles/generateFlowFile (returns [{filename, flow}]) and stringifyFlowFile (returns the YAML string).",
 				example: `await writeFlowFiles('./flows', AppModule, {\n  baseUrl: 'http://localhost:3000',\n});\n// flows/todos.flow.yaml, flows/users.flow.yaml\n\n// single-file variant — groups per controller:\nawait writeFlowFile('./flows', AppModule);`,
 			},
 			{
@@ -896,8 +896,8 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "hono-forge flows <entry>",
-				desc: "Generates api-tester .flow.yaml files — one per controller, CRUD-chained. @Serialize/@ValidateResult contracts seed exists assertions for required top-level fields ($[0].* for arrays), scoped with forStatus to the success status so they don't fail on error responses. Options: --out <dir> (default ./flows), --base-url <url> (default http://localhost:3000), --single (one file with a visual group per controller), --auth '<METHOD> <path>' + --auth-body/--auth-extract (prepend a login step so guarded flows actually run — {{vars}} in the body become editable variables), --export <name>.",
-				example: `bunx hono-forge flows ./src/app.module.ts --out ./flows\nbunx hono-forge flows ./src/app.module.ts --single \\\n  --base-url http://localhost:3000\n\n# authenticated APIs — login step produces {{token}}:\nbunx hono-forge flows ./src/app.module.ts \\\n  --auth 'POST /v1/auth/login' \\\n  --auth-body '{"username":"{{user}}","password":"{{pass}}"}' \\\n  --auth-extract 'token=data.accessToken'\n\n# then in api-tester: Import flow → pick a .flow.yaml → Run`,
+				desc: "Generates api-tester .flow.yaml files — one per controller, CRUD-chained. Auth detection covers guards AND @JwtAuth middleware — REST/SSE nodes get Bearer {{token}} headers, auth-protected and @ChannelAuth WS nodes get ?token={{token}} on the URL (sockets can't carry headers), and @ApiQuery params declared on SSE/WS handlers land on the URL as seeded {{var}} placeholders. @Serialize/@ValidateResult contracts seed exists assertions for required top-level fields ($[0].* for arrays), scoped with forStatus to the success status. Options: --out <dir> (default ./flows), --base-url <url> (default http://localhost:3000), --single (one file with a visual group per controller), --auth '<METHOD> <path>' + --auth-body/--auth-extract (prepend a login step so guarded flows actually run — {{vars}} in the body become editable variables), --ws-query 'k=v,...' (extra params on every WS node URL, {{vars}} allowed), --export <name>.",
+				example: `bunx hono-forge flows ./src/app.module.ts --out ./flows\nbunx hono-forge flows ./src/app.module.ts --single \\\n  --base-url http://localhost:3000\n\n# authenticated APIs — login step produces {{token}}:\nbunx hono-forge flows ./src/app.module.ts \\\n  --auth 'POST /v1/auth/login' \\\n  --auth-body '{"username":"{{user}}","password":"{{pass}}"}' \\\n  --auth-extract 'token=data.accessToken'\n\n# extra params on every WebSocket node URL:\nbunx hono-forge flows ./src/app.module.ts \\\n  --ws-query 'outletId={{outletId}}&region=us-1'\n\n# then in api-tester: Import flow → pick a .flow.yaml → Run`,
 			},
 			{
 				name: "hono-forge openapi <entry>",
@@ -921,7 +921,7 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "hono-forge client <entry>",
-				desc: "Writes a typed client route map — the generated file declares interface AppRoutes for createClient<AppRoutes>(baseUrl). Options: --out <file> (default ./routes.gen.ts), --name <ident> (interface name), --import-path <p> (module specifier the file imports controller types from — controllers must be exported there), --export <name>. Re-run as a codegen step whenever routes change.",
+				desc: "Writes a typed client route map — the generated file declares interface AppRoutes for createClient<AppRoutes>(baseUrl). Each controller is imported from its own source file — @Controller records where the class is declared, so the output compiles even when controllers aren't re-exported from the entry module. Options: --out <file> (default ./routes.gen.ts), --name <ident> (interface name), --import-path <p> (opt out of per-file imports and treat one module as a barrel for every controller), --export <name>. Re-run as a codegen step whenever routes change.",
 				example: `bunx hono-forge client ./src/app.module.ts --out src/routes.gen.ts\n\n# then:\nimport { createClient } from 'hono-forge';\nimport type { AppRoutes } from './routes.gen';\n\nconst api = createClient<AppRoutes>('http://localhost:3000');`,
 			},
 			{

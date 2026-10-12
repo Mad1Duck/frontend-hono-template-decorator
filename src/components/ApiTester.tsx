@@ -17,15 +17,15 @@ export default function ApiTester() {
 			<div className="section-label">try it</div>
 			<h2 className="section-title">Generated flows, ready to run.</h2>
 			<p className="section-desc">
-				hono-forge can emit ready-to-execute{" "}
-				<code>.flow.yaml</code> files straight from your route metadata —
-				CRUD chains, sample bodies from <code>@Validate</code>/
-				<code>@ApiBody</code> schemas (multipart <code>form-data</code> for{" "}
-				<code>z.file()</code> fields), query params from{" "}
-				<code>@ApiQuery</code>, typed path-param variables, response
-				assertions from <code>@ApiResponse</code>, auth header placeholders,
-				and SSE/WS nodes. Import them into{" "}
-				<strong>api-tester</strong> (our Electron API client) and hit Run.
+				hono-forge can emit ready-to-execute <code>.flow.yaml</code> files
+				straight from your route metadata — CRUD chains, sample bodies from{" "}
+				<code>@Validate</code>/<code>@ApiBody</code> schemas (multipart{" "}
+				<code>form-data</code> for <code>z.file()</code> fields), query params
+				from <code>@ApiQuery</code>, typed path-param variables, response
+				assertions from <code>@ApiResponse</code>, auth placeholders (Bearer
+				headers — or <code>?token=</code> on WS nodes, since sockets can't carry
+				headers), and SSE/WS nodes. Import them into <strong>api-tester</strong>{" "}
+				(our Electron API client) and hit Run.
 			</p>
 
 			<div className="feature-grid reveal">
