@@ -57,7 +57,7 @@ import { PostController } from './post.controller'
 @Module({ controllers: [PostController] })
 class AppModule {}
 
-export default createApp(AppModule, { openapi: true })`;
+export default await createApp(AppModule, { openapi: true })`;
 
 const STEP5 = `bun test
 # GET http://localhost:3000/posts        → 200
@@ -223,7 +223,7 @@ HonoRouteBuilder.configure({
 })
 class AppModule {}
 
-export default createApp(AppModule, {
+export default await createApp(AppModule, {
   openapi: { info: { title: 'Todo API', version: '1.0.0' } },
   health: true,        // GET /health
   metrics: true,       // GET /metrics (Prometheus)

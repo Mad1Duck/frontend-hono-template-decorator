@@ -116,8 +116,8 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "createApp(module, opts?)",
-				desc: "One-call bootstrap: buildModule + optional /health probes + /docs OpenAPI + /metrics + CORS + printRoutes + gracefulShutdown. Every option optional.",
-				example: `const app = createApp(AppModule, {\n  health: { probes: true, checks: { db: () => db.ping() } },\n  metrics: true,\n  openapi: { info: { title: 'My API', version: '1.0.0' } },\n  cors: true,\n  printRoutes: true,\n  shutdown: { timeoutMs: 10_000 },\n});\nexport default app;`,
+				desc: "One-call async bootstrap: buildModule + optional /health probes + /docs OpenAPI + /metrics + CORS + printRoutes + gracefulShutdown, then awaits container.boot() so onInit() hooks run before the app is returned. Pass boot: false to skip (tests managing lifecycle manually), strictDi: true to forbid bare `new` on @Injectable classes. Every option optional.",
+				example: `const app = await createApp(AppModule, {\n  health: { probes: true, checks: { db: () => db.ping() } },\n  metrics: true,\n  openapi: { info: { title: 'My API', version: '1.0.0' } },\n  cors: true,\n  printRoutes: true,\n  shutdown: { timeoutMs: 10_000 },\n  // boot: false,    // skip container.boot()\n  // strictDi: true, // strict DI — bare new() on @Injectable throws\n});\nexport default app;`,
 			},
 			{
 				name: "HonoRouteBuilder.describe(target)",
@@ -193,13 +193,23 @@ export const DOC_GROUPS: DocGroup[] = [
 			},
 			{
 				name: "container.boot()",
-				desc: "Calls onInit() on all registered singletons that implement OnInit. Call once at app startup before starting the server.",
+				desc: "Calls onInit() on all registered singletons that implement OnInit. createApp() already awaits it — call yourself only with manual buildModule()/build() wiring.",
 				example: `await container.boot();\nBun.serve({ fetch: app.fetch, port: 3000 });`,
 			},
 			{
 				name: "container.shutdown()",
 				desc: "Calls onDestroy() on all singletons in reverse registration order. Call in SIGTERM/SIGINT handler.",
 				example: `process.on('SIGTERM', async () => {\n  await container.shutdown(); // closes DB, Redis, etc.\n  process.exit(0);\n});`,
+			},
+			{
+				name: "strict DI — @Injectable(deps, { strict }) / strictDi",
+				desc: "Opt-in guard against leaving the container: bare `new` on a strict @Injectable class throws 'DI bypass'. Enable per class via @Injectable(deps, { strict: true }) or globally via createApp(AppModule, { strictDi: true }) / container.strictDi = true. container.resolve(), constructor injection, and registerFactory() internals still construct normally.",
+				example: `@Injectable([EmailService], { strict: true })\nclass UserService {\n  constructor(private email: EmailService) {}\n}\n\nnew UserService(mail);          // throws DI bypass\ncontainer.resolve(UserService); // OK\n\n// global:\nconst app = await createApp(AppModule, { strictDi: true });`,
+			},
+			{
+				name: "container.construct(cls, ...args)",
+				desc: "The official escape hatch under strict DI — creates an unmanaged instance with caller-provided args (no injection, no singleton caching, no lifecycle hooks). For tests and scripts.",
+				example: `// deliberate unmanaged instance — deps passed manually\nconst svc = container.construct(UserService, fakeEmail);`,
 			},
 			{
 				name: "container.runInScope(fn)",
@@ -319,9 +329,9 @@ export const DOC_GROUPS: DocGroup[] = [
 				example: `@Post('/submit')\nasync submit(c: Context) {\n  const form = await FormBody(c);\n  const name = form.get('name') as string;\n  return { name };\n}`,
 			},
 			{
-				name: "ValidatedBody / ValidatedQuery",
-				desc: "Aliases for Body(c, schema) and Query(c, schema) — same behaviour, emphasises validation intent.",
-				example: `const data = await ValidatedBody(c, CreateSchema);\nconst q    = await ValidatedQuery(c, FilterSchema);`,
+				name: "ValidatedBody / ValidatedQuery / ValidatedParams",
+				desc: "Schema-first helpers — return type infers as z.infer<typeof schema>, no manual generics. Cache-first: if @Validate already parsed the request, the cached value is returned; otherwise the helper parses through your schema itself (works on undecorated routes). Without a schema they degrade to the raw Body/Query/Params helpers.",
+				example: `const data = await ValidatedBody(c, CreateSchema);    // z.infer<typeof CreateSchema>\nconst q    = await ValidatedQuery(c, FilterSchema);   // typed query object\nconst { id } = await ValidatedParams(c, IdSchema);    // typed route params\n\n// no schema → raw (cache if @Validate ran)\nconst raw = await ValidatedBody(c);`,
 			},
 			{
 				name: "ValidatedParam(c, name, schema)",

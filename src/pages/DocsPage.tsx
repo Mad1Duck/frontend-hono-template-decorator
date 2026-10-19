@@ -67,7 +67,7 @@ export default app`;
 
 const CREATE_APP = `import { createApp } from 'hono-forge'
 
-const app = createApp(AppModule, {
+const app = await createApp(AppModule, {
   health: { probes: true, checks: { db: () => db.ping() } }, // /health + /health/live + /health/ready
   metrics: true,                                            // GET /metrics (Prometheus)
   openapi: { info: { title: 'My API', version: '1.0.0' } }, // GET /docs + /openapi.json
